@@ -1,0 +1,340 @@
+import React, { useState, useEffect } from "react";
+import HomeScreen from "./components/HomeScreen";
+import InvestmentSurvey from "./components/InvestmentSurvey";
+import PortfolioRecommendation from "./components/PortfolioRecommendation";
+import PortfolioAnalysis from "./components/PortfolioAnalysis";
+import PortfolioDashboard from "./components/PortfolioDashboard";
+import PortfolioListScreen from "./components/PortfolioListScreen";
+import AdvancedPerformanceAnalysis from "./components/AdvancedPerformanceAnalysis";
+import RiskManagement from "./components/RiskManagement";
+import EducationCenter from "./components/EducationCenter";
+import PersonalizedRecommendations from "./components/PersonalizedRecommendations";
+import ExternalIntegrations from "./components/ExternalIntegrations";
+import { initializeAPI } from "./utils/api_improved";
+
+export interface InvestorProfile {
+  type: string;
+  title: string;
+  description: string;
+  characteristics: string[];
+  color: string;
+}
+
+interface Asset {
+  ticker: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  sector: string;
+  type: "stock" | "crypto";
+  geckoId?: string;
+  uniqueId?: string;
+}
+
+interface InvestmentSettings {
+  initialInvestment: number;
+  rebalancingAmount: number;
+  rebalancingPeriod: string;
+  exchangeRate: number;
+}
+
+interface SavedPortfolio {
+  id: string;
+  name: string;
+  investorProfile: InvestorProfile;
+  assets: Asset[];
+  allocations: Record<string, number>;
+  totalValue: number;
+  dailyChange: number;
+  dailyChangePercent: number;
+  createdDate: string;
+  author?: {
+    name: string;
+    isVerified?: boolean;
+  };
+  followers?: number;
+  likes?: number;
+}
+
+export default function App() {
+  const [currentStep, setCurrentStep] = useState<
+    | "home"
+    | "survey"
+    | "portfolio"
+    | "analysis"
+    | "dashboard"
+    | "portfolioList"
+    | "advancedAnalysis"
+    | "riskManagement"
+    | "education"
+    | "recommendations"
+    | "integrations"
+  >("home");
+  const [investorProfile, setInvestorProfile] =
+    useState<InvestorProfile | null>(null);
+  const [selectedAssets, setSelectedAssets] = useState<Asset[]>(
+    [],
+  );
+  const [allocations, setAllocations] = useState<
+    Record<string, number>
+  >({});
+  const [investmentSettings, setInvestmentSettings] =
+    useState<InvestmentSettings>({
+      initialInvestment: 10000,
+      rebalancingAmount: 1000,
+      rebalancingPeriod: "monthly",
+      exchangeRate: 1380,
+    });
+  const [savedPortfolios, setSavedPortfolios] = useState<
+    SavedPortfolio[]
+  >([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Initialize API system on app startup
+  useEffect(() => {
+    initializeAPI().catch(error => {
+      console.error('Failed to initialize API system:', error);
+    });
+  }, []);
+
+  const handleStartInvestmentSurvey = () => {
+    setCurrentStep("survey");
+  };
+
+  const handleLogin = () => {
+    // 로그인 처리 후 포트폴리오 목록으로 이동
+    setIsLoggedIn(true);
+    setCurrentStep("portfolioList");
+  };
+
+  const handleSurveyComplete = (profile: InvestorProfile) => {
+    setInvestorProfile(profile);
+    setCurrentStep("portfolio");
+  };
+
+  const handlePortfolioToAnalysis = (
+    assets: Asset[],
+    initialAllocations: Record<string, number>,
+  ) => {
+    setSelectedAssets(assets);
+    setAllocations(initialAllocations);
+    setCurrentStep("analysis");
+  };
+
+  const handleAnalysisToDashboard = (
+    finalAllocations: Record<string, number>,
+    settings?: InvestmentSettings,
+  ) => {
+    setAllocations(finalAllocations);
+    if (settings) {
+      setInvestmentSettings(settings);
+    }
+    setCurrentStep("dashboard");
+  };
+
+  const handleSavePortfolio = () => {
+    // 포트폴리오 저장 후 목록으로 이동
+    if (investorProfile && selectedAssets.length > 0) {
+      const newPortfolio: SavedPortfolio = {
+        id: `portfolio-${Date.now()}`,
+        name: `${investorProfile.title} 포트폴리오`,
+        investorProfile,
+        assets: selectedAssets,
+        allocations,
+        totalValue: investmentSettings.initialInvestment,
+        dailyChange: Math.random() * 1000 - 500, // 임시 데이터
+        dailyChangePercent: (Math.random() - 0.5) * 4, // 임시 데이터
+        createdDate: new Date().toISOString().split("T")[0],
+      };
+
+      setSavedPortfolios((prev) => [...prev, newPortfolio]);
+      setCurrentStep("portfolioList");
+    }
+  };
+
+  const handleBackToHome = () => {
+    setCurrentStep("home");
+    setInvestorProfile(null);
+    setSelectedAssets([]);
+    setAllocations({});
+    setInvestmentSettings({
+      initialInvestment: 10000,
+      rebalancingAmount: 1000,
+      rebalancingPeriod: "monthly",
+      exchangeRate: 1380,
+    });
+  };
+
+  const handleBackToSurvey = () => {
+    setCurrentStep("survey");
+    setInvestorProfile(null);
+    setSelectedAssets([]);
+    setAllocations({});
+    setInvestmentSettings({
+      initialInvestment: 10000,
+      rebalancingAmount: 1000,
+      rebalancingPeriod: "monthly",
+      exchangeRate: 1380,
+    });
+  };
+
+  const handleBackToPortfolio = () => {
+    setCurrentStep("portfolio");
+  };
+
+  const handleBackToAnalysis = () => {
+    setCurrentStep("analysis");
+  };
+
+  const handleEditPortfolio = () => {
+    setCurrentStep("analysis");
+  };
+
+  const handleNewPortfolio = () => {
+    setCurrentStep("survey");
+    setInvestorProfile(null);
+    setSelectedAssets([]);
+    setAllocations({});
+    setInvestmentSettings({
+      initialInvestment: 10000,
+      rebalancingAmount: 1000,
+      rebalancingPeriod: "monthly",
+      exchangeRate: 1380,
+    });
+  };
+
+  const handleBackToPortfolioList = () => {
+    setCurrentStep("portfolioList");
+  };
+
+  const handleViewPortfolioFromList = (
+    portfolio: SavedPortfolio,
+  ) => {
+    // 선택한 포트폴리오 정보로 상태 업데이트
+    setInvestorProfile(portfolio.investorProfile);
+    setSelectedAssets(portfolio.assets);
+    setAllocations(portfolio.allocations);
+    setCurrentStep("dashboard");
+  };
+
+  const handleAdvancedAnalysis = () => {
+    setCurrentStep("advancedAnalysis");
+  };
+
+  const handleRiskManagement = () => {
+    setCurrentStep("riskManagement");
+  };
+
+  const handleEducationCenter = () => {
+    setCurrentStep("education");
+  };
+
+  const handlePersonalizedRecommendations = () => {
+    setCurrentStep("recommendations");
+  };
+
+  const handleExternalIntegrations = () => {
+    setCurrentStep("integrations");
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentStep("dashboard");
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <div
+        className="bg-white shadow-lg overflow-hidden"
+        style={{
+          width: "393px",
+          height: "852px",
+          maxWidth: "100vw",
+          maxHeight: "100vh",
+        }}
+      >
+        {currentStep === "home" ? (
+          <HomeScreen
+            onStartInvestmentSurvey={
+              handleStartInvestmentSurvey
+            }
+            onLogin={handleLogin}
+          />
+        ) : currentStep === "portfolioList" ? (
+          <PortfolioListScreen
+            onBack={handleBackToHome}
+            onCreateNew={handleNewPortfolio}
+            onViewPortfolio={handleViewPortfolioFromList}
+            currentUserPortfolios={savedPortfolios}
+            onEducationCenter={handleEducationCenter}
+            onPersonalizedRecommendations={
+              handlePersonalizedRecommendations
+            }
+            onExternalIntegrations={handleExternalIntegrations}
+          />
+        ) : currentStep === "survey" ? (
+          <InvestmentSurvey onComplete={handleSurveyComplete} />
+        ) : currentStep === "portfolio" ? (
+          <PortfolioRecommendation
+            investorProfile={investorProfile!}
+            onBack={handleBackToSurvey}
+            onAnalyze={handlePortfolioToAnalysis}
+          />
+        ) : currentStep === "analysis" ? (
+          <PortfolioAnalysis
+            investorProfile={investorProfile!}
+            selectedAssets={selectedAssets}
+            initialAllocations={allocations}
+            onBack={handleBackToPortfolio}
+            onSave={handleAnalysisToDashboard}
+          />
+        ) : currentStep === "advancedAnalysis" ? (
+          <AdvancedPerformanceAnalysis
+            assets={selectedAssets}
+            allocations={allocations}
+            initialInvestment={
+              investmentSettings.initialInvestment
+            }
+            onBack={handleBackToDashboard}
+          />
+        ) : currentStep === "riskManagement" ? (
+          <RiskManagement
+            assets={selectedAssets}
+            allocations={allocations}
+            initialInvestment={
+              investmentSettings.initialInvestment
+            }
+            onBack={handleBackToDashboard}
+          />
+        ) : currentStep === "education" ? (
+          <EducationCenter onBack={handleBackToPortfolioList} />
+        ) : currentStep === "recommendations" ? (
+          <PersonalizedRecommendations
+            onBack={handleBackToPortfolioList}
+            investorProfile={investorProfile}
+          />
+        ) : currentStep === "integrations" ? (
+          <ExternalIntegrations
+            onBack={handleBackToPortfolioList}
+          />
+        ) : (
+          <PortfolioDashboard
+            investorProfile={investorProfile!}
+            selectedAssets={selectedAssets}
+            allocations={allocations}
+            investmentSettings={investmentSettings}
+            onBack={
+              isLoggedIn
+                ? handleBackToPortfolioList
+                : handleBackToAnalysis
+            }
+            onEdit={handleEditPortfolio}
+            onNewPortfolio={handleSavePortfolio}
+            onAdvancedAnalysis={handleAdvancedAnalysis}
+            onRiskManagement={handleRiskManagement}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
