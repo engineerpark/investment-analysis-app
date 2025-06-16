@@ -357,7 +357,7 @@ export default function PortfolioAnalysis({
                       </div>
                       <Slider
                         value={[allocations[asset.ticker] || 0]}
-                        onValueChange={(value) => handleAllocationChange(asset.ticker, value[0])}
+                        onValueChange={(value: number[]) => handleAllocationChange(asset.ticker, value[0])}
                         max={100}
                         step={0.1}
                         className="w-full"
