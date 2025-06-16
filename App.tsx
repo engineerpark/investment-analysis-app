@@ -311,7 +311,7 @@ export default function App() {
         ) : currentStep === "recommendations" ? (
           <PersonalizedRecommendations
             onBack={handleBackToPortfolioList}
-            investorProfile={investorProfile}
+            investorProfile={investorProfile || undefined}
           />
         ) : currentStep === "integrations" ? (
           <ExternalIntegrations
