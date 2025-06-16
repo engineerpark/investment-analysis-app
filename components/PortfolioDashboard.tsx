@@ -893,7 +893,7 @@ export default function PortfolioDashboard({
                       </DialogDescription>
                     </DialogHeader>
                     
-                    <Tabs value={backtestPeriod} onValueChange={(value) => setBacktestPeriod(value as '1y' | '3y' | '10y')} className="w-full">
+                    <Tabs value={backtestPeriod} onValueChange={(value: string) => setBacktestPeriod(value as '1y' | '3y' | '10y')} className="w-full">
                       <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="1y" className="text-xs">1년</TabsTrigger>
                         <TabsTrigger value="3y" className="text-xs">3년</TabsTrigger>
@@ -967,22 +967,7 @@ export default function PortfolioDashboard({
                                         dataKey="value" 
                                         stroke="#10B981" 
                                         strokeWidth={2}
-                                        dot={(props) => {
-                                          if (props.payload?.isRebalancing) {
-                                            return (
-                                              <circle
-                                                key={`rebalancing-${props.index}-${props.payload.date}`}
-                                                cx={props.cx}
-                                                cy={props.cy}
-                                                r={4}
-                                                fill="#3B82F6"
-                                                stroke="#ffffff"
-                                                strokeWidth={2}
-                                              />
-                                            );
-                                          }
-                                          return null;
-                                        }}
+                                        dot={false}
                                       />
                                     </LineChart>
                                   </ResponsiveContainer>
@@ -1062,7 +1047,7 @@ export default function PortfolioDashboard({
                       </DialogDescription>
                     </DialogHeader>
                     
-                    <Tabs value={forecastPeriod} onValueChange={(value) => setForecastPeriod(value as '6m' | '1y')} className="w-full">
+                    <Tabs value={forecastPeriod} onValueChange={(value: string) => setForecastPeriod(value as '6m' | '1y')} className="w-full">
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="6m" className="text-xs">6개월</TabsTrigger>
                         <TabsTrigger value="1y" className="text-xs">1년</TabsTrigger>

@@ -292,7 +292,7 @@ export async function searchAssets(query: string): Promise<AssetData[]> {
   
   // 실시간 가격 업데이트
   const pricePromises = popularMatches.map(asset => 
-    fetchAssetPrice(asset.ticker, asset.type)
+    fetchAssetPrice(asset.ticker, asset.type === 'etf' || asset.type === 'commodity' ? 'stock' : asset.type)
   );
   
   const priceResults = await Promise.all(pricePromises);
