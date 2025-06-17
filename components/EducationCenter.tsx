@@ -333,7 +333,7 @@ export default function EducationCenter({ onBack }: EducationCenterProps) {
                               <Progress value={selectedCourse.progress} className="h-2" />
                             </div>
                             
-                            <Button className="w-full">
+                            <Button className="w-full" variant="primary">
                               <Play className="h-4 w-4 mr-2" />
                               {selectedCourse.progress > 0 ? '학습 계속하기' : '학습 시작하기'}
                             </Button>

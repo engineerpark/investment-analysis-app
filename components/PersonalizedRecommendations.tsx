@@ -629,7 +629,7 @@ export default function PersonalizedRecommendations({
                             </ul>
                           </div>
 
-                          <Button className="w-full">
+                          <Button className="w-full" variant="success">
                             <Zap className="h-4 w-4 mr-2" />
                             이 가이드 적용하기
                           </Button>

@@ -31,7 +31,7 @@ export default function HomeScreen({
 
               {/* Main Actions */}
               <div className="space-y-4 mb-8">
-                <Button onClick={onStartInvestmentSurvey} className="w-full h-14" size="lg">
+                <Button onClick={onStartInvestmentSurvey} variant="primary" className="w-full h-14" size="lg">
                   <PieChart className="h-5 w-5 mr-3" />
                   <div className="text-left">
                     <div className="text-base font-medium">투자 성향 분석</div>
@@ -39,7 +39,7 @@ export default function HomeScreen({
                   </div>
                 </Button>
 
-                <Button onClick={onLogin} variant="outline" className="w-full h-14" size="lg">
+                <Button onClick={onLogin} variant="secondary" className="w-full h-14" size="lg">
                   <LogIn className="h-5 w-5 mr-3" />
                   <div className="text-left">
                     <div className="text-base font-medium">기존 포트폴리오 관리</div>

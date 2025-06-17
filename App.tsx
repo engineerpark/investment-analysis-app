@@ -7,6 +7,8 @@ import PortfolioDashboard from "./components/PortfolioDashboard";
 import PortfolioListScreen from "./components/PortfolioListScreen";
 import AdvancedPerformanceAnalysis from "./components/AdvancedPerformanceAnalysis";
 import RiskManagement from "./components/RiskManagement";
+import BacktestingScreen from "./components/BacktestingScreen";
+import FuturePredictionScreen from "./components/FuturePredictionScreen";
 import EducationCenter from "./components/EducationCenter";
 import PersonalizedRecommendations from "./components/PersonalizedRecommendations";
 import ExternalIntegrations from "./components/ExternalIntegrations";
@@ -25,6 +27,8 @@ export default function App() {
     | "portfolioList"
     | "advancedAnalysis"
     | "riskManagement"
+    | "backtesting"
+    | "futurePrediction"
     | "education"
     | "recommendations"
     | "integrations"
@@ -56,9 +60,23 @@ export default function App() {
 
   // Initialize API system on app startup
   useEffect(() => {
-    initializeAPI().catch(error => {
-      console.error('Failed to initialize API system:', error);
-    });
+    let isMounted = true;
+    
+    const initAPI = async () => {
+      try {
+        await initializeAPI();
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to initialize API system:', error);
+        }
+      }
+    };
+    
+    initAPI();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleStartInvestmentSurvey = () => {
@@ -225,6 +243,14 @@ export default function App() {
     setCurrentStep("riskManagement");
   };
 
+  const handleBacktesting = () => {
+    setCurrentStep("backtesting");
+  };
+
+  const handleFuturePrediction = () => {
+    setCurrentStep("futurePrediction");
+  };
+
   const handleEducationCenter = () => {
     setCurrentStep("education");
   };
@@ -306,6 +332,22 @@ export default function App() {
             }
             onBack={handleBackToDashboard}
           />
+        ) : currentStep === "backtesting" ? (
+          <BacktestingScreen
+            investorProfile={investorProfile!}
+            selectedAssets={selectedAssets}
+            allocations={allocations}
+            investmentSettings={investmentSettings}
+            onBack={handleBackToDashboard}
+          />
+        ) : currentStep === "futurePrediction" ? (
+          <FuturePredictionScreen
+            investorProfile={investorProfile!}
+            selectedAssets={selectedAssets}
+            allocations={allocations}
+            investmentSettings={investmentSettings}
+            onBack={handleBackToDashboard}
+          />
         ) : currentStep === "education" ? (
           <EducationCenter onBack={handleBackToPortfolioList} />
         ) : currentStep === "recommendations" ? (
@@ -332,6 +374,8 @@ export default function App() {
             onNewPortfolio={handleSavePortfolio}
             onAdvancedAnalysis={handleAdvancedAnalysis}
             onRiskManagement={handleRiskManagement}
+            onBacktesting={handleBacktesting}
+            onFuturePrediction={handleFuturePrediction}
             isPublicView={isViewingPublicPortfolio}
             portfolioAuthor={currentPortfolioAuthor}
           />

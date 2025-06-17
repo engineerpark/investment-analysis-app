@@ -70,27 +70,50 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     const loadPopularAssets = async () => {
       try {
         setIsLoading(true);
-        const popular = await getPopularAssets();
         
-        // UniversalAsset을 Asset으로 변환
-        const convertedAssets: Asset[] = popular.map(asset => ({
-          ...asset,
-          ticker: asset.symbol,
-          uniqueId: `${asset.type}-${asset.symbol}-${asset.id}`
-        }));
+        // Mock 데이터 추가 (API 실패 시 대체용)
+        const mockAssets: Asset[] = [
+          { id: 'AAPL', symbol: 'AAPL', name: 'Apple Inc.', price: 192.53, change: 2.39, changePercent: 1.24, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD', uniqueId: 'stock-AAPL-AAPL', ticker: 'AAPL' },
+          { id: 'MSFT', symbol: 'MSFT', name: 'Microsoft Corporation', price: 415.26, change: -1.50, changePercent: -0.36, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD', uniqueId: 'stock-MSFT-MSFT', ticker: 'MSFT' },
+          { id: 'GOOGL', symbol: 'GOOGL', name: 'Alphabet Inc.', price: 175.84, change: 1.11, changePercent: 0.63, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD', uniqueId: 'stock-GOOGL-GOOGL', ticker: 'GOOGL' },
+          { id: 'TSLA', symbol: 'TSLA', name: 'Tesla Inc.', price: 248.42, change: -3.18, changePercent: -1.28, sector: 'Automotive', type: 'stock', market: 'US', currency: 'USD', uniqueId: 'stock-TSLA-TSLA', ticker: 'TSLA' },
+          { id: 'NVDA', symbol: 'NVDA', name: 'NVIDIA Corporation', price: 875.28, change: 17.65, changePercent: 2.02, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD', uniqueId: 'stock-NVDA-NVDA', ticker: 'NVDA' },
+          { id: 'BTC', symbol: 'BTC', name: 'Bitcoin', price: 94250.67, change: 1980.15, changePercent: 2.10, sector: 'Cryptocurrency', type: 'crypto', market: 'CRYPTO', currency: 'USD', geckoId: 'bitcoin', uniqueId: 'crypto-BTC-BTC', ticker: 'BTC' },
+          { id: 'ETH', symbol: 'ETH', name: 'Ethereum', price: 3650.32, change: -61.32, changePercent: -1.68, sector: 'Cryptocurrency', type: 'crypto', market: 'CRYPTO', currency: 'USD', geckoId: 'ethereum', uniqueId: 'crypto-ETH-ETH', ticker: 'ETH' },
+          { id: '005930', symbol: '005930', name: '삼성전자', price: 75000, change: 1000, changePercent: 1.35, sector: 'Technology', type: 'stock', market: 'KR', currency: 'KRW', exchange: 'KOSPI', uniqueId: 'stock-005930-005930', ticker: '005930' }
+        ];
+        
+        let convertedAssets: Asset[] = mockAssets;
+        
+        try {
+          const popular = await getPopularAssets();
+          
+          if (popular.length > 0) {
+            // API 성공시 실제 데이터 사용
+            convertedAssets = popular.map(asset => ({
+              ...asset,
+              ticker: asset.symbol,
+              uniqueId: `${asset.type}-${asset.symbol}-${asset.id}`
+            }));
+          }
+        } catch (apiError) {
+          console.warn('API 호출 실패, Mock 데이터 사용:', apiError);
+        }
         
         setPopularAssets(convertedAssets);
         
-        // 투자자 타입에 따른 초기 포트폴리오 설정
+            // 투자자 타입에 따른 초기 포트폴리오 설정 (강제 적용)
         const strategy = portfolioStrategies[investorProfile.type];
-        if (strategy && strategy.assets.length > 0) {
+        if (strategy && strategy.assets && strategy.assets.length > 0) {
           const initialAssets = strategy.assets.map(symbol => {
             return convertedAssets.find(asset => 
               asset.symbol === symbol || asset.ticker === symbol
             );
-          }).filter(Boolean) as Asset[];
+          }).filter((asset): asset is Asset => asset !== undefined);
           
-          setSelectedAssets(initialAssets);
+          if (initialAssets.length > 0) {
+            setSelectedAssets(initialAssets);
+          }
         }
         
         setLoadingError(null);
@@ -149,7 +172,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     if (selectedAssets.length >= 20) return;
     
     const isAlreadySelected = selectedAssets.some(a => 
-      a.symbol === asset.symbol && a.type === asset.type
+      a.symbol === asset.symbol && a.type === asset.type && a.market === asset.market
     );
     
     if (!isAlreadySelected) {
@@ -162,7 +185,9 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
   // 자산 제거
   const handleRemoveAsset = (uniqueId: string) => {
-    setSelectedAssets(prev => prev.filter(asset => asset.uniqueId !== uniqueId));
+    setSelectedAssets(prev => prev.filter(asset => 
+      asset.uniqueId !== uniqueId
+    ));
   };
 
   // 포트폴리오 분석으로 이동
@@ -175,7 +200,9 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     
     selectedAssets.forEach(asset => {
       const assetId = asset.symbol || asset.ticker || asset.id || '';
-      allocations[assetId] = equalAllocation;
+      if (assetId) {
+        allocations[assetId] = equalAllocation;
+      }
     });
     
     onAnalyze(selectedAssets, allocations);
@@ -191,7 +218,9 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     
     selectedAssets.forEach(asset => {
       const assetId = asset.symbol || asset.ticker || asset.id || '';
-      allocations[assetId] = equalAllocation;
+      if (assetId) {
+        allocations[assetId] = equalAllocation;
+      }
     });
     
     onSavePortfolio(selectedAssets, allocations);
@@ -265,11 +294,11 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mb-1 truncate">{asset.name}</p>
-          <p className="text-xs text-muted-foreground mb-2 truncate">{asset.sector}</p>
+          <p className="text-xs text-gray-500 mb-1 truncate">{asset.name}</p>
+          <p className="text-xs text-gray-500 mb-2 truncate">{asset.sector}</p>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{formatPrice(asset.price, asset.currency)}</span>
-            {asset.price > 0 && (
+            {asset.price > 0 && asset.changePercent !== undefined && (
               <span className={`text-xs font-medium ${asset.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {asset.changePercent >= 0 ? '+' : ''}{asset.changePercent.toFixed(2)}%
               </span>
@@ -280,16 +309,16 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
           {isSelected ? (
             <Button
               size="sm"
-              variant="outline"
+              variant="danger"
               onClick={onRemove}
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              className="h-8 w-8 p-0"
             >
               <Minus className="h-4 w-4" />
             </Button>
           ) : (
             <Button
               size="sm"
-              variant="primary"
+              variant="success"
               onClick={onAdd}
               disabled={selectedAssets.length >= 20}
               className="h-8 w-8 p-0"
@@ -310,11 +339,11 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen bg-background flex items-center justify-center" style={{ width: '393px', height: '852px' }}>
+      <div className="w-full min-h-screen bg-white flex items-center justify-center" style={{ width: '393px', height: '852px' }}>
         <div className="text-center px-4">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <h2 className="text-lg mb-2">실시간 시세 로딩 중...</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500">
             최신 가격 정보를 가져오고 있습니다.
           </p>
         </div>
@@ -323,7 +352,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   }
 
   return (
-    <div className="w-full bg-background" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full bg-white" style={{ width: '393px', height: '852px' }}>
       <div className="h-full flex flex-col">
         {/* 스크롤 가능한 메인 컨텐츠 */}
         <div className="flex-1 overflow-y-auto">
@@ -340,20 +369,20 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
               </Button>
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-semibold truncate">포트폴리오 추천</h1>
-                <Badge className={`${investorProfile.color} text-xs mt-1`}>
+                <Badge className={`${investorProfile.color || ''} text-xs mt-1`}>
                   {investorProfile.title}
                 </Badge>
               </div>
             </div>
 
             {/* 진행 단계 표시 */}
-            <div className="bg-muted rounded-lg p-3">
+            <div className="bg-gray-100 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">단계 1/3: 자산 선택</span>
-                <span className="text-xs text-muted-foreground">다음: 비중 조정</span>
+                <span className="text-xs text-gray-500">다음: 비중 조정</span>
               </div>
-              <div className="w-full bg-background rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: '33%' }}></div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: '33%' }}></div>
               </div>
             </div>
 
@@ -361,7 +390,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
             {currentStrategy && (
               <Card className="p-4">
                 <h3 className="font-medium text-sm mb-2">{currentStrategy.name}</h3>
-                <p className="text-xs text-muted-foreground">{currentStrategy.description}</p>
+                <p className="text-xs text-gray-500">{currentStrategy.description}</p>
               </Card>
             )}
 
@@ -379,7 +408,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
             <div className="space-y-3">
               <h2 className="text-base font-medium">자산 검색 및 추가</h2>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
                   placeholder="주식, ETF, 암호화폐 검색... (예: 삼성전자, Apple, 비트코인)"
                   value={searchTerm}
@@ -387,7 +416,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                   className="pl-10 h-12"
                 />
                 {isSearching && (
-                  <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
                 )}
               </div>
 
@@ -396,21 +425,21 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg bg-white p-2">
                   {isSearching ? (
                     <div className="text-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">검색 중...</span>
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-gray-500" />
+                      <span className="text-sm text-gray-500">검색 중...</span>
                     </div>
                   ) : searchResults.length > 0 ? (
                     searchResults.map((asset) => (
                       <AssetCard
                         key={asset.uniqueId}
                         asset={asset}
-                        isSelected={selectedAssets.some(a => a.symbol === asset.symbol && a.type === asset.type)}
+                        isSelected={selectedAssets.some(a => a.symbol === asset.symbol && a.type === asset.type && a.market === asset.market)}
                         onAdd={() => handleAddAsset(asset)}
                       />
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-gray-500">
                         "{searchTerm}"에 대한 검색 결과가 없습니다
                       </span>
                     </div>
@@ -441,14 +470,14 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-medium">선택된 포트폴리오</h2>
-                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                  <div className="flex gap-3 mt-1 text-xs text-gray-500">
                     <span>주식 {stockCount}개</span>
                     <span>ETF {etfCount}개</span>
                     <span>코인 {cryptoCount}개</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm text-muted-foreground font-medium">
+                  <span className="text-sm text-gray-500 font-medium">
                     {selectedAssets.length}/20
                   </span>
                   {selectedAssets.length > 0 && (
@@ -466,41 +495,41 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                       key={asset.uniqueId}
                       asset={asset}
                       isSelected={true}
-                      onRemove={() => handleRemoveAsset(asset.uniqueId!)}
-                      allocation={currentStrategy?.allocation[asset.symbol]}
+                      onRemove={() => handleRemoveAsset(asset.uniqueId || `${asset.type}-${asset.symbol}-${asset.id}`)}
+                      allocation={currentStrategy?.allocation[asset.symbol] || currentStrategy?.allocation[asset.ticker || '']}
                     />
                   ))}
                 </div>
               ) : (
                 <Card className="p-8 text-center border-dashed">
-                  <PieChart className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <PieChart className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+                  <p className="text-sm text-gray-500 mb-2">
                     아직 선택된 자산이 없습니다
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-500">
                     위의 검색을 통해 자산을 추가해보세요
                   </p>
                 </Card>
               )}
             </div>
 
-            {/* 하단 여백 */}
-            <div className="h-20"></div>
+            {/* 하단 여백 - 버튼 영역을 위한 공간 확보 */}
+            <div className="h-40"></div>
           </div>
         </div>
 
         {/* 하단 고정 버튼 */}
-        <div className="flex-shrink-0 px-4 pb-6 pt-4 bg-background border-t border-border">
+        <div className="flex-shrink-0 px-4 pb-6 pt-4 bg-white border-t border-gray-200">
           {selectedAssets.length > 0 ? (
             <div className="space-y-3">
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-center text-xs text-gray-500">
                 {selectedAssets.length}개 자산이 선택되었습니다
               </div>
               <div className="space-y-2">
                 <Button 
-                  variant="primary"
+                  variant="success"
                   size="touch"
-                  className="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                  className="w-full"
                   onClick={handleAnalyzePortfolio}
                 >
                   <ArrowRight className="h-5 w-5 mr-2" />
@@ -508,7 +537,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                 </Button>
                 {onSavePortfolio && (
                   <Button 
-                    variant="outline"
+                    variant="secondary"
                     size="touch"
                     className="w-full"
                     onClick={handleSavePortfolioDirectly}
@@ -521,7 +550,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-center text-xs text-gray-500">
                 최소 1개 이상의 자산을 선택해주세요
               </div>
               <Button 

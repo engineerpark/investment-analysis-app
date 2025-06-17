@@ -58,11 +58,23 @@ export default function PortfolioListScreen({
         type: 'growth',
         title: '성장 추구형',
         description: '높은 성장 잠재력을 가진 기업에 투자',
-        characteristics: [],
+        characteristics: ['고성장 기업 선호', '기술주 중심', '장기 투자'],
         color: 'bg-green-600'
       },
-      assets: [],
-      allocations: {},
+      assets: [
+        { id: 'NVDA', symbol: 'NVDA', name: 'NVIDIA Corporation', price: 875.28, change: 17.65, changePercent: 2.02, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'TSLA', symbol: 'TSLA', name: 'Tesla Inc.', price: 248.42, change: -3.18, changePercent: -1.28, sector: 'Automotive', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'AAPL', symbol: 'AAPL', name: 'Apple Inc.', price: 192.53, change: 2.39, changePercent: 1.24, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'META', symbol: 'META', name: 'Meta Platforms', price: 502.31, change: -4.02, changePercent: -0.8, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'GOOGL', symbol: 'GOOGL', name: 'Alphabet Inc.', price: 175.84, change: 1.11, changePercent: 0.63, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD' }
+      ],
+      allocations: {
+        'NVDA': 30,
+        'TSLA': 25,
+        'AAPL': 20,
+        'META': 15,
+        'GOOGL': 10
+      },
       totalValue: 50000,
       dailyChange: 1250,
       dailyChangePercent: 2.56,
@@ -78,14 +90,24 @@ export default function PortfolioListScreen({
       id: 'public-2',
       name: 'ESG 지속가능 포트폴리오',
       investorProfile: {
-        type: 'esg',
-        title: 'ESG 투자형',
+        type: 'moderate',
+        title: '균형 투자형',
         description: '환경과 사회적 가치를 중시하는 투자',
-        characteristics: [],
+        characteristics: ['ESG 중심', '지속가능성', '사회적 책임'],
         color: 'bg-emerald-600'
       },
-      assets: [],
-      allocations: {},
+      assets: [
+        { id: 'MSFT', symbol: 'MSFT', name: 'Microsoft', price: 415.26, change: -1.50, changePercent: -0.36, sector: 'Technology', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'JNJ', symbol: 'JNJ', name: 'Johnson & Johnson', price: 165.82, change: 1.34, changePercent: 0.81, sector: 'Healthcare', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'PG', symbol: 'PG', name: 'Procter & Gamble', price: 158.45, change: 0.76, changePercent: 0.48, sector: 'Consumer Staples', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'NEE', symbol: 'NEE', name: 'NextEra Energy', price: 89.34, change: -0.45, changePercent: -0.50, sector: 'Utilities', type: 'stock', market: 'US', currency: 'USD' }
+      ],
+      allocations: {
+        'MSFT': 30,
+        'JNJ': 25,
+        'PG': 25,
+        'NEE': 20
+      },
       totalValue: 30000,
       dailyChange: -450,
       dailyChangePercent: -1.48,
@@ -101,14 +123,26 @@ export default function PortfolioListScreen({
       id: 'public-3',
       name: '방어적 배당주 전략',
       investorProfile: {
-        type: 'dividend',
-        title: '배당 선호형',
+        type: 'conservative',
+        title: '안정 추구형',
         description: '안정적인 배당 수익을 추구',
-        characteristics: [],
+        characteristics: ['배당 중심', '저변동성', '장기 보유'],
         color: 'bg-blue-600'
       },
-      assets: [],
-      allocations: {},
+      assets: [
+        { id: 'KO', symbol: 'KO', name: 'Coca-Cola', price: 61.23, change: 0.31, changePercent: 0.51, sector: 'Consumer Staples', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'VZ', symbol: 'VZ', name: 'Verizon', price: 41.56, change: 0.15, changePercent: 0.36, sector: 'Telecom', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'T', symbol: 'T', name: 'AT&T', price: 19.87, change: 0.08, changePercent: 0.40, sector: 'Telecom', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'XOM', symbol: 'XOM', name: 'Exxon Mobil', price: 104.56, change: 0.89, changePercent: 0.86, sector: 'Energy', type: 'stock', market: 'US', currency: 'USD' },
+        { id: 'TLT', symbol: 'TLT', name: '20+ Year Treasury', price: 89.45, change: -0.22, changePercent: -0.25, sector: 'ETF', type: 'etf', market: 'US', currency: 'USD' }
+      ],
+      allocations: {
+        'KO': 20,
+        'VZ': 20,
+        'T': 15,
+        'XOM': 20,
+        'TLT': 25
+      },
       totalValue: 75000,
       dailyChange: 380,
       dailyChangePercent: 0.51,
@@ -124,14 +158,24 @@ export default function PortfolioListScreen({
       id: 'public-4',
       name: '암호화폐 & 혁신기술',
       investorProfile: {
-        type: 'crypto',
-        title: '혁신 투자형',
+        type: 'very-aggressive',
+        title: '공격 투자형',
         description: '새로운 기술과 디지털 자산에 투자',
-        characteristics: [],
+        characteristics: ['고위험 고수익', '암호화폐 중심', '혁신 기술'],
         color: 'bg-purple-600'
       },
-      assets: [],
-      allocations: {},
+      assets: [
+        { id: 'BTC', symbol: 'BTC', name: 'Bitcoin', price: 94250.67, change: 1980.15, changePercent: 2.10, sector: 'Cryptocurrency', type: 'crypto', market: 'CRYPTO', currency: 'USD', geckoId: 'bitcoin' },
+        { id: 'ETH', symbol: 'ETH', name: 'Ethereum', price: 3650.32, change: -61.32, changePercent: -1.68, sector: 'Cryptocurrency', type: 'crypto', market: 'CRYPTO', currency: 'USD', geckoId: 'ethereum' },
+        { id: 'SOL', symbol: 'SOL', name: 'Solana', price: 198.74, change: 8.87, changePercent: 4.46, sector: 'Cryptocurrency', type: 'crypto', market: 'CRYPTO', currency: 'USD', geckoId: 'solana' },
+        { id: 'ARKK', symbol: 'ARKK', name: 'ARK Innovation ETF', price: 52.31, change: 1.89, changePercent: 3.62, sector: 'ETF', type: 'etf', market: 'US', currency: 'USD' }
+      ],
+      allocations: {
+        'BTC': 40,
+        'ETH': 30,
+        'SOL': 20,
+        'ARKK': 10
+      },
       totalValue: 25000,
       dailyChange: 2100,
       dailyChangePercent: 9.17,
@@ -252,7 +296,7 @@ export default function PortfolioListScreen({
                               첫 번째 포트폴리오를 만들어보세요
                             </p>
                           </div>
-                          <Button onClick={onCreateNew} className="mt-4">
+                          <Button onClick={onCreateNew} className="mt-4" variant="primary">
                             포트폴리오 만들기
                           </Button>
                         </div>

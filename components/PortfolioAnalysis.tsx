@@ -593,13 +593,14 @@ export default function PortfolioAnalysis({
         <div className="flex-shrink-0 px-4 pb-4 pt-2 bg-background border-t border-border space-y-3">
           <Button 
             className="w-full h-12"
+            variant="success"
             onClick={handleGoToDashboard}
           >
             <ArrowRight className="h-4 w-4 mr-2" />
             다음: 대시보드 보기
           </Button>
           <Button 
-            variant="outline" 
+            variant="success" 
             className="w-full h-12"
             onClick={() => {
               const settings: InvestmentSettings = {

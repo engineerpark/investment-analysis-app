@@ -241,6 +241,7 @@ export default function InvestmentSurvey({ onComplete, onBack }: InvestmentSurve
               <div className="space-y-3">
                 <Button 
                   onClick={handleViewPortfolio}
+                  variant="success"
                   className="w-full h-12"
                 >
                   <ArrowRight className="h-4 w-4 mr-2" />
@@ -331,9 +332,9 @@ export default function InvestmentSurvey({ onComplete, onBack }: InvestmentSurve
               {/* 첫 번째 질문에서 건너뛰기 버튼 표시 */}
               {currentQuestion === 0 && (
                 <Button
-                  variant="ghost"
+                  variant="info"
                   onClick={handleSkipToPortfolio}
-                  className="w-full h-12 text-muted-foreground"
+                  className="w-full h-12"
                 >
                   <ArrowRight className="h-4 w-4 mr-2" />
                   테스트 건너뛰고 포트폴리오 보기
