@@ -52,9 +52,10 @@ interface PortfolioRecommendationProps {
   investorProfile: InvestorProfile;
   onBack: () => void;
   onAnalyze: (assets: Asset[], allocations: Record<string, number>) => void;
+  onSavePortfolio?: (assets: Asset[], allocations: Record<string, number>) => void;
 }
 
-export default function PortfolioRecommendation({ investorProfile, onBack, onAnalyze }: PortfolioRecommendationProps) {
+export default function PortfolioRecommendation({ investorProfile, onBack, onAnalyze, onSavePortfolio }: PortfolioRecommendationProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
   const [searchResults, setSearchResults] = useState<Asset[]>([]);
@@ -178,6 +179,22 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     });
     
     onAnalyze(selectedAssets, allocations);
+  };
+
+  // 포트폴리오 바로 저장
+  const handleSavePortfolioDirectly = () => {
+    if (selectedAssets.length === 0 || !onSavePortfolio) return;
+    
+    // 선택된 자산들에 대해 균등 분배로 초기 설정
+    const equalAllocation = 100 / selectedAssets.length;
+    const allocations: Record<string, number> = {};
+    
+    selectedAssets.forEach(asset => {
+      const assetId = asset.symbol || asset.ticker || asset.id || '';
+      allocations[assetId] = equalAllocation;
+    });
+    
+    onSavePortfolio(selectedAssets, allocations);
   };
 
   // 자산 타입별 아이콘
@@ -475,19 +492,32 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
         {/* 하단 고정 버튼 */}
         <div className="flex-shrink-0 px-4 pb-6 pt-4 bg-background border-t border-border">
           {selectedAssets.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="text-center text-xs text-muted-foreground">
                 {selectedAssets.length}개 자산이 선택되었습니다
               </div>
-              <Button 
-                variant="primary"
-                size="touch"
-                className="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500"
-                onClick={handleAnalyzePortfolio}
-              >
-                <ArrowRight className="h-5 w-5 mr-2" />
-                다음: 비중 조정 및 분석 시작
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  variant="primary"
+                  size="touch"
+                  className="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                  onClick={handleAnalyzePortfolio}
+                >
+                  <ArrowRight className="h-5 w-5 mr-2" />
+                  다음: 비중 조정하기
+                </Button>
+                {onSavePortfolio && (
+                  <Button 
+                    variant="outline"
+                    size="touch"
+                    className="w-full"
+                    onClick={handleSavePortfolioDirectly}
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    포트폴리오 바로 저장 (균등분배)
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-2">

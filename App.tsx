@@ -116,6 +116,32 @@ export default function App() {
     }
   };
 
+  const handleSavePortfolioFromRecommendation = (
+    assets: Asset[],
+    allocationData: Record<string, number>
+  ) => {
+    // 포트폴리오 추천에서 바로 저장
+    if (investorProfile && assets.length > 0) {
+      setSelectedAssets(assets);
+      setAllocations(allocationData);
+
+      const newPortfolio: SavedPortfolio = {
+        id: `portfolio-${Date.now()}`,
+        name: `${investorProfile.title} 포트폴리오`,
+        investorProfile,
+        assets,
+        allocations: allocationData,
+        totalValue: investmentSettings.initialInvestment,
+        dailyChange: Math.random() * 1000 - 500, // 임시 데이터
+        dailyChangePercent: (Math.random() - 0.5) * 4, // 임시 데이터
+        createdDate: new Date().toISOString().split("T")[0],
+      };
+
+      setSavedPortfolios((prev) => [...prev, newPortfolio]);
+      setCurrentStep("portfolioList");
+    }
+  };
+
   const handleBackToHome = () => {
     setCurrentStep("home");
     setInvestorProfile(null);
@@ -252,6 +278,7 @@ export default function App() {
             investorProfile={investorProfile!}
             onBack={handleBackToSurvey}
             onAnalyze={handlePortfolioToAnalysis}
+            onSavePortfolio={handleSavePortfolioFromRecommendation}
           />
         ) : currentStep === "analysis" ? (
           <PortfolioAnalysis

@@ -266,6 +266,17 @@ export default function PortfolioAnalysis({
                 </div>
               </div>
 
+              {/* 진행 단계 표시 */}
+              <div className="bg-muted rounded-lg p-3 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">단계 2/3: 비중 조정</span>
+                  <span className="text-xs text-muted-foreground">다음: 포트폴리오 저장</span>
+                </div>
+                <div className="w-full bg-background rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: '66%' }}></div>
+                </div>
+              </div>
+
               {/* Chart Toggle */}
               <div className="flex gap-2 mb-4">
                 <Button
