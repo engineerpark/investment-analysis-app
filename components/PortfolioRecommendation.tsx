@@ -329,6 +329,17 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
               </div>
             </div>
 
+            {/* 진행 단계 표시 */}
+            <div className="bg-muted rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">단계 1/3: 자산 선택</span>
+                <span className="text-xs text-muted-foreground">다음: 비중 조정</span>
+              </div>
+              <div className="w-full bg-background rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: '33%' }}></div>
+              </div>
+            </div>
+
             {/* 전략 설명 */}
             {currentStrategy && (
               <Card className="p-4">
@@ -419,9 +430,16 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                     <span>코인 {cryptoCount}개</span>
                   </div>
                 </div>
-                <span className="text-sm text-muted-foreground font-medium">
-                  {selectedAssets.length}/20
-                </span>
+                <div className="text-right">
+                  <span className="text-sm text-muted-foreground font-medium">
+                    {selectedAssets.length}/20
+                  </span>
+                  {selectedAssets.length > 0 && (
+                    <div className="text-xs text-green-600 font-medium">
+                      ✓ 다음 단계 가능
+                    </div>
+                  )}
+                </div>
               </div>
 
               {selectedAssets.length > 0 ? (
@@ -456,16 +474,37 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
         {/* 하단 고정 버튼 */}
         <div className="flex-shrink-0 px-4 pb-6 pt-4 bg-background border-t border-border">
-          <Button 
-            variant="primary"
-            size="touch"
-            className="w-full"
-            onClick={handleAnalyzePortfolio}
-            disabled={selectedAssets.length === 0}
-          >
-            <ArrowRight className="h-5 w-5 mr-2" />
-            다음: 포트폴리오 분석 ({selectedAssets.length}개 자산)
-          </Button>
+          {selectedAssets.length > 0 ? (
+            <div className="space-y-2">
+              <div className="text-center text-xs text-muted-foreground">
+                {selectedAssets.length}개 자산이 선택되었습니다
+              </div>
+              <Button 
+                variant="primary"
+                size="touch"
+                className="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                onClick={handleAnalyzePortfolio}
+              >
+                <ArrowRight className="h-5 w-5 mr-2" />
+                다음: 비중 조정 및 분석 시작
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-center text-xs text-muted-foreground">
+                최소 1개 이상의 자산을 선택해주세요
+              </div>
+              <Button 
+                variant="outline"
+                size="touch"
+                className="w-full"
+                disabled={true}
+              >
+                <ArrowRight className="h-5 w-5 mr-2" />
+                자산을 선택해주세요
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
