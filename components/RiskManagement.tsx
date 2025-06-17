@@ -19,13 +19,20 @@ import {
 } from '../utils/riskManagement';
 
 interface Asset {
-  ticker: string;
+  id?: string;
+  symbol: string;
+  ticker?: string; // Keep for backward compatibility
   name: string;
   price: number;
   change: number;
   changePercent: number;
+  volume?: number;
+  marketCap?: number;
   sector: string;
-  type: 'stock' | 'crypto';
+  type: "stock" | "crypto" | "etf" | "index";
+  market?: 'US' | 'KR' | 'CRYPTO' | 'GLOBAL';
+  currency?: string;
+  exchange?: string;
   geckoId?: string;
   uniqueId?: string;
 }
@@ -54,6 +61,9 @@ export default function RiskManagement({
   onBack
 }: RiskManagementProps) {
   const [selectedTab, setSelectedTab] = useState('volatility');
+  
+  // Helper function to get asset identifier (symbol or ticker)
+  const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
 
   // 현재 경제지표 데이터 (2025년 6월 15일 기준)
   const economicIndicators: EconomicIndicator[] = [
@@ -216,7 +226,8 @@ export default function RiskManagement({
         }
 
         // 랜덤 변동 추가
-        const seed = generateSeed(asset.ticker, factor);
+        const assetId = getAssetId(asset);
+        const seed = generateSeed(assetId, factor);
         const randomFactor = (seededRandom(seed) - 0.5) * 0.3;
         let correlation = baseCorrelation + randomFactor;
         
@@ -228,7 +239,7 @@ export default function RiskManagement({
     });
 
     return {
-      assets: assets.map(asset => asset.ticker),
+      assets: assets.map(asset => getAssetId(asset)),
       economicFactors,
       correlations
     };

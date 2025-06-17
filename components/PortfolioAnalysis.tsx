@@ -10,13 +10,20 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, T
 import { InvestorProfile } from '../App';
 
 interface Asset {
-  ticker: string;
+  id?: string;
+  symbol: string;
+  ticker?: string; // Keep for backward compatibility
   name: string;
   price: number;
   change: number;
   changePercent: number;
+  volume?: number;
+  marketCap?: number;
   sector: string;
-  type: 'stock' | 'crypto';
+  type: "stock" | "crypto" | "etf" | "index";
+  market?: 'US' | 'KR' | 'CRYPTO' | 'GLOBAL';
+  currency?: string;
+  exchange?: string;
   geckoId?: string;
   uniqueId?: string;
 }
@@ -89,6 +96,9 @@ export default function PortfolioAnalysis({
   const [rebalancingPeriod, setRebalancingPeriod] = useState<string>('monthly');
   const [exchangeRate, setExchangeRate] = useState<number>(1380); // USD to KRW
 
+  // Helper function to get asset identifier (symbol or ticker)
+  const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
+
   // 비중 총합이 100%가 되도록 자동 조정
   const normalizeAllocations = (newAllocations: Record<string, number>) => {
     const total = Object.values(newAllocations).reduce((sum, value) => sum + value, 0);
@@ -112,7 +122,7 @@ export default function PortfolioAnalysis({
     const equalValue = 100 / selectedAssets.length;
     const equalAllocations: Record<string, number> = {};
     selectedAssets.forEach(asset => {
-      equalAllocations[asset.ticker] = equalValue;
+      equalAllocations[getAssetId(asset)] = equalValue;
     });
     setAllocations(equalAllocations);
   };
@@ -172,7 +182,8 @@ export default function PortfolioAnalysis({
     const sectorMap: Record<string, number> = {};
     
     selectedAssets.forEach(asset => {
-      const allocation = allocations[asset.ticker] || 0;
+      const assetId = getAssetId(asset);
+      const allocation = allocations[assetId] || 0;
       if (sectorMap[asset.sector]) {
         sectorMap[asset.sector] += allocation;
       } else {
@@ -193,13 +204,16 @@ export default function PortfolioAnalysis({
   // 자산별 데이터 계산
   const getAssetData = (): AssetData[] => {
     return selectedAssets
-      .map((asset, index) => ({
-        name: asset.name,
-        ticker: asset.ticker,
-        value: Math.round((allocations[asset.ticker] || 0) * 100) / 100,
-        color: ASSET_COLORS[index % ASSET_COLORS.length],
-        sector: asset.sector
-      }))
+      .map((asset, index) => {
+        const assetId = getAssetId(asset);
+        return {
+          name: asset.name,
+          ticker: assetId,
+          value: Math.round((allocations[assetId] || 0) * 100) / 100,
+          color: ASSET_COLORS[index % ASSET_COLORS.length],
+          sector: asset.sector
+        };
+      })
       .filter(item => item.value > 0)
       .sort((a, b) => b.value - a.value);
   };
@@ -340,33 +354,36 @@ export default function PortfolioAnalysis({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {selectedAssets.map((asset) => (
-                    <div key={asset.uniqueId} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{asset.ticker}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {asset.sector}
-                          </Badge>
+                  {selectedAssets.map((asset) => {
+                    const assetId = getAssetId(asset);
+                    return (
+                      <div key={asset.uniqueId} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{assetId}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {asset.sector}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium min-w-[50px] text-right">
+                              {(allocations[assetId] || 0).toFixed(1)}%
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium min-w-[50px] text-right">
-                            {(allocations[asset.ticker] || 0).toFixed(1)}%
-                          </span>
-                        </div>
+                        <Slider
+                          value={[allocations[assetId] || 0]}
+                          onValueChange={(value: number[]) => handleAllocationChange(assetId, value[0])}
+                          max={100}
+                          step={0.1}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground truncate">
+                          {asset.name}
+                        </p>
                       </div>
-                      <Slider
-                        value={[allocations[asset.ticker] || 0]}
-                        onValueChange={(value: number[]) => handleAllocationChange(asset.ticker, value[0])}
-                        max={100}
-                        step={0.1}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-muted-foreground truncate">
-                        {asset.name}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
 

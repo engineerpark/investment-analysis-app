@@ -17,13 +17,20 @@ import {
 } from '../utils/performanceAnalysis';
 
 interface Asset {
-  ticker: string;
+  id?: string;
+  symbol: string;
+  ticker?: string; // Keep for backward compatibility
   name: string;
   price: number;
   change: number;
   changePercent: number;
+  volume?: number;
+  marketCap?: number;
   sector: string;
-  type: 'stock' | 'crypto';
+  type: "stock" | "crypto" | "etf" | "index";
+  market?: 'US' | 'KR' | 'CRYPTO' | 'GLOBAL';
+  currency?: string;
+  exchange?: string;
   geckoId?: string;
   uniqueId?: string;
 }
@@ -44,6 +51,9 @@ export default function AdvancedPerformanceAnalysis({
   const [selectedPeriod, setSelectedPeriod] = useState<'1y' | '3y' | '5y'>('1y');
   const [selectedBenchmark, setSelectedBenchmark] = useState('SPY');
 
+  // Helper function to get asset identifier (symbol or ticker)
+  const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
+
   // 포트폴리오 데이터 생성 (시뮬레이션)
   const portfolioData = useMemo(() => {
     const days = selectedPeriod === '1y' ? 365 : selectedPeriod === '3y' ? 1095 : 1825;
@@ -52,7 +62,8 @@ export default function AdvancedPerformanceAnalysis({
     
     // 포트폴리오 기반 시드 생성
     const portfolioSeed = assets.reduce((seed, asset, index) => {
-      return seed + asset.ticker.charCodeAt(0) * (index + 1);
+      const assetId = getAssetId(asset);
+      return seed + assetId.charCodeAt(0) * (index + 1);
     }, 0);
     
     // 포트폴리오 예상 수익률 및 변동성 계산
@@ -60,7 +71,8 @@ export default function AdvancedPerformanceAnalysis({
     let portfolioVolatility = 0;
     
     assets.forEach(asset => {
-      const allocation = allocations[asset.ticker] / 100;
+      const assetId = getAssetId(asset);
+      const allocation = allocations[assetId] / 100;
       let assetReturn = 0.08; // 기본 수익률
       let assetVolatility = 0.2; // 기본 변동성
       

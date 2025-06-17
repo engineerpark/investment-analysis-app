@@ -10,52 +10,10 @@ import RiskManagement from "./components/RiskManagement";
 import EducationCenter from "./components/EducationCenter";
 import PersonalizedRecommendations from "./components/PersonalizedRecommendations";
 import ExternalIntegrations from "./components/ExternalIntegrations";
-import { initializeAPI } from "./utils/api_improved";
+import { initializeAPI } from "./utils/api_enhanced";
+import type { Asset, InvestorProfile, InvestmentSettings, SavedPortfolio } from "./types/common";
 
-export interface InvestorProfile {
-  type: string;
-  title: string;
-  description: string;
-  characteristics: string[];
-  color: string;
-}
-
-interface Asset {
-  ticker: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  sector: string;
-  type: "stock" | "crypto";
-  geckoId?: string;
-  uniqueId?: string;
-}
-
-interface InvestmentSettings {
-  initialInvestment: number;
-  rebalancingAmount: number;
-  rebalancingPeriod: string;
-  exchangeRate: number;
-}
-
-interface SavedPortfolio {
-  id: string;
-  name: string;
-  investorProfile: InvestorProfile;
-  assets: Asset[];
-  allocations: Record<string, number>;
-  totalValue: number;
-  dailyChange: number;
-  dailyChangePercent: number;
-  createdDate: string;
-  author?: {
-    name: string;
-    isVerified?: boolean;
-  };
-  followers?: number;
-  likes?: number;
-}
+export type { InvestorProfile } from "./types/common";
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState<
@@ -243,9 +201,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex justify-center items-start min-h-screen bg-gray-100 py-4">
       <div
-        className="bg-white shadow-lg overflow-hidden"
+        className="bg-white shadow-lg overflow-hidden rounded-lg"
         style={{
           width: "393px",
           height: "852px",
@@ -273,7 +231,7 @@ export default function App() {
             onExternalIntegrations={handleExternalIntegrations}
           />
         ) : currentStep === "survey" ? (
-          <InvestmentSurvey onComplete={handleSurveyComplete} />
+          <InvestmentSurvey onComplete={handleSurveyComplete} onBack={handleBackToHome} />
         ) : currentStep === "portfolio" ? (
           <PortfolioRecommendation
             investorProfile={investorProfile!}

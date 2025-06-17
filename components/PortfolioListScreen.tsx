@@ -264,7 +264,7 @@ export default function PortfolioListScreen({
                 <div className="space-y-4">
                   {/* Popular Portfolios */}
                   {publicPortfolios.map((portfolio) => (
-                    <Card key={portfolio.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => onViewPortfolio(portfolio)}>
+                    <Card key={portfolio.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
@@ -302,6 +302,16 @@ export default function PortfolioListScreen({
                               {portfolio.dailyChangePercent >= 0 ? '+' : ''}{portfolio.dailyChangePercent.toFixed(2)}%
                             </div>
                           </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => onViewPortfolio(portfolio)}
+                          >
+                            포트폴리오 보기
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

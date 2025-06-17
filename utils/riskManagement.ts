@@ -1,14 +1,5 @@
-interface Asset {
-  ticker: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  sector: string;
-  type: 'stock' | 'crypto';
-  geckoId?: string;
-  uniqueId?: string;
-}
+import type { Asset } from '../types/common';
+import { getAssetId } from '../types/common';
 
 interface VolatilityAnalysis {
   asset: string;
@@ -64,7 +55,7 @@ export function analyzePortfolioVolatility(
 
   // 개별 자산 변동성 계산
   assets.forEach((asset, i) => {
-    const allocation = allocations[asset.ticker] / 100;
+    const allocation = allocations[getAssetId(asset)] / 100;
     let volatility = 0;
     
     // 자산 타입별 예상 변동성
@@ -83,7 +74,7 @@ export function analyzePortfolioVolatility(
     const contributionToPortfolio = allocation * allocation * volatility * volatility;
     
     assetVolatilities.push({
-      asset: asset.ticker,
+      asset: getAssetId(asset),
       name: asset.name,
       volatility: volatility * 100,
       contributionToPortfolio: contributionToPortfolio * 100,
@@ -100,8 +91,8 @@ export function analyzePortfolioVolatility(
     for (let i = 0; i < assets.length; i++) {
       for (let j = 0; j < assets.length; j++) {
         if (i !== j) {
-          const allocation_i = allocations[assets[i].ticker] / 100;
-          const allocation_j = allocations[assets[j].ticker] / 100;
+          const allocation_i = allocations[getAssetId(assets[i])] / 100;
+          const allocation_j = allocations[getAssetId(assets[j])] / 100;
           const vol_i = assetVolatilities[i].volatility / 100;
           const vol_j = assetVolatilities[j].volatility / 100;
           const correlation = correlationMatrix[i][j];
@@ -169,7 +160,7 @@ export function generateCorrelationMatrix(assets: Asset[]): CorrelationMatrix {
         }
 
         // 랜덤 변동 추가
-        const seed = generateSeed(asset1.ticker, asset2.ticker);
+        const seed = generateSeed(getAssetId(asset1), getAssetId(asset2));
         const randomFactor = (seededRandom(seed) - 0.5) * 0.4;
         let correlation = baseCorrelation + randomFactor;
         
@@ -184,7 +175,7 @@ export function generateCorrelationMatrix(assets: Asset[]): CorrelationMatrix {
   }
 
   return {
-    assets: assets.map(asset => asset.ticker),
+    assets: assets.map(asset => getAssetId(asset)),
     correlations
   };
 }
@@ -211,7 +202,7 @@ export function calculateVaR(
       const randomReturns = generateCorrelatedReturns(assets, correlationMatrix);
       
       assets.forEach((asset, i) => {
-        const allocation = allocations[asset.ticker] / 100;
+        const allocation = allocations[getAssetId(asset)] / 100;
         portfolioReturn += allocation * randomReturns[i];
       });
       
@@ -378,7 +369,7 @@ export function performStressTest(
     let portfolioLoss = 0;
     
     assets.forEach(asset => {
-      const allocation = allocations[asset.ticker] / 100;
+      const allocation = allocations[getAssetId(asset)] / 100;
       const assetValue = allocation * portfolioValue;
       
       let assetShock = scenario.marketShock;
@@ -427,7 +418,7 @@ export function calculateDiversificationEffect(
 } {
   // 허핀달-허시만 지수 (HHI) 계산
   const hhi = assets.reduce((sum, asset) => {
-    const allocation = allocations[asset.ticker] / 100;
+    const allocation = allocations[getAssetId(asset)] / 100;
     return sum + allocation * allocation;
   }, 0);
 
@@ -447,14 +438,14 @@ export function calculateDiversificationEffect(
     recommendations.push('포트폴리오가 과도하게 집중되어 있습니다. 분산투자를 고려해보세요.');
   }
   
-  const maxAllocation = Math.max(...assets.map(asset => allocations[asset.ticker]));
+  const maxAllocation = Math.max(...assets.map(asset => allocations[getAssetId(asset)]));
   if (maxAllocation > 30) {
     recommendations.push('단일 자산 비중이 30%를 초과합니다. 위험 분산을 위해 비중을 줄여보세요.');
   }
   
   const cryptoAllocation = assets
     .filter(asset => asset.type === 'crypto')
-    .reduce((sum, asset) => sum + allocations[asset.ticker], 0);
+    .reduce((sum, asset) => sum + allocations[getAssetId(asset)], 0);
   if (cryptoAllocation > 20) {
     recommendations.push('암호화폐 비중이 높습니다. 변동성 위험을 고려해 비중을 조정해보세요.');
   }

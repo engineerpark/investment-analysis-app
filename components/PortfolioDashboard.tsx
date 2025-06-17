@@ -10,13 +10,20 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { InvestorProfile } from '../App';
 
 interface Asset {
-  ticker: string;
+  id?: string;
+  symbol: string;
+  ticker?: string; // Keep for backward compatibility
   name: string;
   price: number;
   change: number;
   changePercent: number;
+  volume?: number;
+  marketCap?: number;
   sector: string;
-  type: 'stock' | 'crypto';
+  type: "stock" | "crypto" | "etf" | "index";
+  market?: 'US' | 'KR' | 'CRYPTO' | 'GLOBAL';
+  currency?: string;
+  exchange?: string;
   geckoId?: string;
   uniqueId?: string;
 }
@@ -116,6 +123,9 @@ export default function PortfolioDashboard({
   onAdvancedAnalysis,
   onRiskManagement
 }: PortfolioDashboardProps) {
+  // Helper function to get asset identifier (symbol or ticker)
+  const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
+
   const [portfolioMetrics, setPortfolioMetrics] = useState<PortfolioMetrics>({
     totalValue: 0,
     dailyChange: 0,
@@ -165,7 +175,7 @@ export default function PortfolioDashboard({
       let weightedRisk = 0;
       
       selectedAssets.forEach(asset => {
-        const allocation = allocations[asset.ticker] || 0;
+        const allocation = allocations[getAssetId(asset)] || 0;
         const assetValue = (allocation / 100) * totalInvestment;
         totalValue += assetValue;
         
@@ -196,7 +206,7 @@ export default function PortfolioDashboard({
       
       // 일일 변동 계산
       const dailyChangePercent = selectedAssets.reduce((acc, asset) => {
-        const allocation = allocations[asset.ticker] || 0;
+        const allocation = allocations[getAssetId(asset)] || 0;
         return acc + (allocation / 100) * asset.changePercent;
       }, 0);
       
@@ -253,7 +263,7 @@ export default function PortfolioDashboard({
           }
           
           // 시드 기반 일관된 랜덤 변동 생성
-          const seed = generateSeed(asset.ticker, i);
+          const seed = generateSeed(getAssetId(asset), i);
           const randomFactor = (seededRandom(seed) - 0.5) * 2; // -1 ~ 1 범위
           
           // 마지막 날(i=0)은 실제 changePercent 사용
@@ -268,7 +278,7 @@ export default function PortfolioDashboard({
           history.unshift(currentPrice); // 배열 앞쪽에 추가 (시간순 정렬)
         }
         
-        assetHistories[asset.ticker] = history;
+        assetHistories[getAssetId(asset)] = history;
       });
       
       // 포트폴리오 가치 계산
@@ -278,8 +288,8 @@ export default function PortfolioDashboard({
         let dayValue = 0;
         
         selectedAssets.forEach(asset => {
-          const allocation = allocations[asset.ticker] || 0;
-          const assetPrice = assetHistories[asset.ticker][i];
+          const allocation = allocations[getAssetId(asset)] || 0;
+          const assetPrice = assetHistories[getAssetId(asset)][i];
           const currentPrice = asset.price;
           const shares = (allocation / 100) * totalInvestment / currentPrice; // 현재 가격 기준 보유 주식 수
           const dayAssetValue = shares * assetPrice; // 해당 날짜의 자산 가치
@@ -353,7 +363,7 @@ export default function PortfolioDashboard({
       let portfolioVolatility = 0;
       
       selectedAssets.forEach(asset => {
-        const allocation = (allocations[asset.ticker] || 0) / 100;
+        const allocation = (allocations[getAssetId(asset)] || 0) / 100;
         const assetReturn = getAssetAnnualReturn(asset);
         const assetVolatility = asset.type === 'crypto' ? 0.6 : 
                                asset.sector?.includes('Bonds') ? 0.05 : 0.2;
@@ -422,14 +432,14 @@ export default function PortfolioDashboard({
       
       // 데이터 가용성 경고 (일부 자산의 데이터가 부족한 경우)
       const oldAssets = selectedAssets.filter(asset => 
-        asset.type === 'crypto' && ['DOGE', 'SOL', 'AVAX', 'MATIC'].includes(asset.ticker)
+        asset.type === 'crypto' && ['DOGE', 'SOL', 'AVAX', 'MATIC'].includes(getAssetId(asset))
       );
       
       let dataWarning = '';
       if (period === '10y' && oldAssets.length > 0) {
-        dataWarning = `${oldAssets.map(a => a.ticker).join(', ')} 등 일부 자산은 2018년 이후 데이터만 사용되었습니다.`;
+        dataWarning = `${oldAssets.map(a => getAssetId(a)).join(', ')} 등 일부 자산은 2018년 이후 데이터만 사용되었습니다.`;
       } else if (period === '3y' && oldAssets.length > 0) {
-        dataWarning = `${oldAssets.map(a => a.ticker).join(', ')} 등 일부 자산은 2020년 이후 데이터만 사용되었습니다.`;
+        dataWarning = `${oldAssets.map(a => getAssetId(a)).join(', ')} 등 일부 자산은 2020년 이후 데이터만 사용되었습니다.`;
       }
       
       const metrics: BacktestMetrics = {
@@ -454,7 +464,7 @@ export default function PortfolioDashboard({
 
   // 포트폴리오 기반 시드 생성 함수 (일관된 데이터를 위해)
   const generatePortfolioSeed = () => {
-    const assetString = selectedAssets.map(asset => asset.ticker).sort().join('');
+    const assetString = selectedAssets.map(asset => getAssetId(asset)).sort().join('');
     const allocationString = Object.keys(allocations).sort().map(key => allocations[key]).join('');
     const settingsString = `${investmentSettings.initialInvestment}${investmentSettings.rebalancingAmount}${investmentSettings.rebalancingPeriod}`;
     return (assetString + allocationString + settingsString).split('').reduce((a, b) => {
@@ -688,7 +698,7 @@ export default function PortfolioDashboard({
     const sectorMap: Record<string, number> = {};
     
     selectedAssets.forEach(asset => {
-      const allocation = allocations[asset.ticker] || 0;
+      const allocation = allocations[getAssetId(asset)] || 0;
       if (sectorMap[asset.sector]) {
         sectorMap[asset.sector] += allocation;
       } else {

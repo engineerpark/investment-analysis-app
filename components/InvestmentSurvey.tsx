@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { InvestorProfile } from '../App';
 
 interface Question {
@@ -14,6 +14,7 @@ interface Question {
 
 interface InvestmentSurveyProps {
   onComplete: (profile: InvestorProfile) => void;
+  onBack?: () => void;
 }
 
 const questions: Question[] = [
@@ -132,7 +133,7 @@ const investorProfiles: Record<string, InvestorProfile> = {
   }
 };
 
-export default function InvestmentSurvey({ onComplete }: InvestmentSurveyProps) {
+export default function InvestmentSurvey({ onComplete, onBack }: InvestmentSurveyProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -267,7 +268,19 @@ export default function InvestmentSurvey({ onComplete }: InvestmentSurveyProps) 
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-lg">투자 성향 분석</h1>
+              <div className="flex items-center gap-2">
+                {onBack && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onBack}
+                    className="h-8 w-8"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                )}
+                <h1 className="text-lg">투자 성향 분석</h1>
+              </div>
               <span className="text-sm text-muted-foreground">
                 {currentQuestion + 1} / {questions.length}
               </span>
