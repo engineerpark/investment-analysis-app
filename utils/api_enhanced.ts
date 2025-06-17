@@ -34,6 +34,18 @@ const API_ENDPOINTS = {
     search: 'https://finnhub.io/api/v1/search',
     quote: 'https://finnhub.io/api/v1/quote',
     token: 'demo', // 실제 사용시 토큰 필요
+  },
+  
+  // Alpha Vantage (한국 주식 지원)
+  ALPHA_VANTAGE: {
+    search: 'https://www.alphavantage.co/query',
+    apiKey: 'demo' // 실제 사용시 API 키 필요
+  },
+  
+  // 한국거래소 실시간 시세 (CORS 우회 필요)
+  KRX: {
+    search: 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd',
+    quote: 'https://api.stock.naver.com/stock/'
   }
 };
 
@@ -109,42 +121,42 @@ export interface SearchResult {
 
 // 국내 주요 주식 목록 (실시간 API 보완용)
 const KOREAN_STOCKS = [
-  { symbol: '005930', name: '삼성전자', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '000660', name: 'SK하이닉스', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '035420', name: 'NAVER', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '051910', name: 'LG화학', sector: 'Chemical', market: 'KOSPI' },
-  { symbol: '006400', name: '삼성SDI', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '207940', name: '삼성바이오로직스', sector: 'Healthcare', market: 'KOSPI' },
-  { symbol: '068270', name: '셀트리온', sector: 'Healthcare', market: 'KOSPI' },
-  { symbol: '035720', name: '카카오', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '028260', name: '삼성물산', sector: 'Conglomerate', market: 'KOSPI' },
-  { symbol: '066570', name: 'LG전자', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '323410', name: '카카오뱅크', sector: 'Financial', market: 'KOSPI' },
-  { symbol: '003670', name: '포스코홀딩스', sector: 'Steel', market: 'KOSPI' },
-  { symbol: '000270', name: '기아', sector: 'Automotive', market: 'KOSPI' },
-  { symbol: '005380', name: '현대차', sector: 'Automotive', market: 'KOSPI' },
-  { symbol: '012330', name: '현대모비스', sector: 'Automotive', market: 'KOSPI' },
-  { symbol: '017670', name: 'SK텔레콤', sector: 'Telecom', market: 'KOSPI' },
-  { symbol: '030200', name: 'KT', sector: 'Telecom', market: 'KOSPI' },
-  { symbol: '055550', name: '신한지주', sector: 'Financial', market: 'KOSPI' },
-  { symbol: '086790', name: '하나금융지주', sector: 'Financial', market: 'KOSPI' },
-  { symbol: '105560', name: 'KB금융', sector: 'Financial', market: 'KOSPI' },
-  { symbol: '018260', name: '삼성에스디에스', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '036570', name: '엔씨소프트', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '251270', name: '넷마블', sector: 'Technology', market: 'KOSPI' },
-  { symbol: '377300', name: '카카오페이', sector: 'Financial', market: 'KOSPI' },
-  { symbol: '047050', name: '포스코인터내셔널', sector: 'Trading', market: 'KOSPI' },
+  { symbol: '005930', name: '삼성전자', englishName: 'Samsung Electronics', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '000660', name: 'SK하이닉스', englishName: 'SK Hynix', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '035420', name: 'NAVER', englishName: 'NAVER', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '051910', name: 'LG화학', englishName: 'LG Chem', sector: 'Chemical', market: 'KOSPI' },
+  { symbol: '006400', name: '삼성SDI', englishName: 'Samsung SDI', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '207940', name: '삼성바이오로직스', englishName: 'Samsung Biologics', sector: 'Healthcare', market: 'KOSPI' },
+  { symbol: '068270', name: '셀트리온', englishName: 'Celltrion', sector: 'Healthcare', market: 'KOSPI' },
+  { symbol: '035720', name: '카카오', englishName: 'Kakao', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '028260', name: '삼성물산', englishName: 'Samsung C&T', sector: 'Conglomerate', market: 'KOSPI' },
+  { symbol: '066570', name: 'LG전자', englishName: 'LG Electronics', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '323410', name: '카카오뱅크', englishName: 'Kakao Bank', sector: 'Financial', market: 'KOSPI' },
+  { symbol: '003670', name: '포스코홀딩스', englishName: 'POSCO Holdings', sector: 'Steel', market: 'KOSPI' },
+  { symbol: '000270', name: '기아', englishName: 'Kia', sector: 'Automotive', market: 'KOSPI' },
+  { symbol: '005380', name: '현대차', englishName: 'Hyundai Motor', sector: 'Automotive', market: 'KOSPI' },
+  { symbol: '012330', name: '현대모비스', englishName: 'Hyundai Mobis', sector: 'Automotive', market: 'KOSPI' },
+  { symbol: '017670', name: 'SK텔레콤', englishName: 'SK Telecom', sector: 'Telecom', market: 'KOSPI' },
+  { symbol: '030200', name: 'KT', englishName: 'KT Corporation', sector: 'Telecom', market: 'KOSPI' },
+  { symbol: '055550', name: '신한지주', englishName: 'Shinhan Financial Group', sector: 'Financial', market: 'KOSPI' },
+  { symbol: '086790', name: '하나금융지주', englishName: 'Hana Financial Group', sector: 'Financial', market: 'KOSPI' },
+  { symbol: '105560', name: 'KB금융', englishName: 'KB Financial Group', sector: 'Financial', market: 'KOSPI' },
+  { symbol: '018260', name: '삼성에스디에스', englishName: 'Samsung SDS', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '036570', name: '엔씨소프트', englishName: 'NCsoft', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '251270', name: '넷마블', englishName: 'Netmarble', sector: 'Technology', market: 'KOSPI' },
+  { symbol: '377300', name: '카카오페이', englishName: 'Kakao Pay', sector: 'Financial', market: 'KOSPI' },
+  { symbol: '047050', name: '포스코인터내셔널', englishName: 'POSCO International', sector: 'Trading', market: 'KOSPI' },
   // 코스닥 주요 종목
-  { symbol: '247540', name: '에코프로비엠', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '086520', name: '에코프로', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '091990', name: '셀트리온헬스케어', sector: 'Healthcare', market: 'KOSDAQ' },
-  { symbol: '196170', name: '알테오젠', sector: 'Healthcare', market: 'KOSDAQ' },
-  { symbol: '058470', name: '리노공업', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '240810', name: '원익IPS', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '357780', name: '솔브레인', sector: 'Chemical', market: 'KOSDAQ' },
-  { symbol: '039030', name: '이오테크닉스', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '067310', name: '하나마이크론', sector: 'Technology', market: 'KOSDAQ' },
-  { symbol: '348210', name: '넥스틴', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '247540', name: '에코프로비엠', englishName: 'EcoPro BM', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '086520', name: '에코프로', englishName: 'EcoPro', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '091990', name: '셀트리온헬스케어', englishName: 'Celltrion Healthcare', sector: 'Healthcare', market: 'KOSDAQ' },
+  { symbol: '196170', name: '알테오젠', englishName: 'Alteogen', sector: 'Healthcare', market: 'KOSDAQ' },
+  { symbol: '058470', name: '리노공업', englishName: 'Leeno Industrial', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '240810', name: '원익IPS', englishName: 'Wonik IPS', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '357780', name: '솔브레인', englishName: 'Soulbrain', sector: 'Chemical', market: 'KOSDAQ' },
+  { symbol: '039030', name: '이오테크닉스', englishName: 'EO Technics', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '067310', name: '하나마이크론', englishName: 'Hana Micron', sector: 'Technology', market: 'KOSDAQ' },
+  { symbol: '348210', name: '넥스틴', englishName: 'Nextin', sector: 'Technology', market: 'KOSDAQ' },
 ];
 
 // 해외 주요 주식 목록
@@ -308,35 +320,82 @@ async function fetchUSStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
   return results;
 }
 
-// 국내 주식 가격 조회 (모의 데이터 - 실제 API 연동 필요)
+// 국내 주식 가격 조회 (Yahoo Finance를 통한 실제 데이터)
 async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> {
   const results: UniversalAsset[] = [];
 
   for (const symbol of symbols) {
-    const stockInfo = KOREAN_STOCKS.find(s => s.symbol === symbol);
-    if (!stockInfo) continue;
+    try {
+      const cacheKey = `kr_stock_${symbol}`;
+      const cached = apiCache.get(cacheKey);
+      if (cached) {
+        results.push(cached);
+        continue;
+      }
 
-    // 실제 환경에서는 KIS API 또는 다른 한국 주식 API 사용
-    // 현재는 모의 데이터 생성
-    const basePrice = 50000 + Math.random() * 200000;
-    const changePercent = (Math.random() - 0.5) * 10;
-    
-    const asset: UniversalAsset = {
-      id: symbol,
-      symbol: symbol,
-      name: stockInfo.name,
-      price: basePrice,
-      change: basePrice * changePercent / 100,
-      changePercent: changePercent,
-      volume: Math.floor(Math.random() * 1000000),
-      type: 'stock',
-      market: 'KR' as const,
-      sector: stockInfo.sector,
-      currency: 'KRW',
-      exchange: stockInfo.market
-    };
+      const stockInfo = KOREAN_STOCKS.find(s => s.symbol === symbol);
+      if (!stockInfo) continue;
 
-    results.push(asset);
+      // Yahoo Finance를 통한 한국 주식 조회 (KOSPI/KOSDAQ 종목은 .KS 또는 .KQ 접미사 사용)
+      const yahooSymbol = `${symbol}.${stockInfo.market === 'KOSPI' ? 'KS' : 'KQ'}`;
+      const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${yahooSymbol}?interval=1d&range=1d`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.chart?.result?.[0];
+        
+        if (result) {
+          const meta = result.meta;
+          const quote = result.indicators?.quote?.[0];
+          
+          if (meta && meta.regularMarketPrice) {
+            const asset: UniversalAsset = {
+              id: symbol,
+              symbol: symbol,
+              name: stockInfo.name,
+              price: meta.regularMarketPrice || 0,
+              change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
+              changePercent: ((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) / (meta.previousClose || 1) * 100,
+              volume: meta.regularMarketVolume,
+              marketCap: meta.marketCap,
+              type: 'stock',
+              market: 'KR' as const,
+              sector: stockInfo.sector,
+              currency: 'KRW',
+              exchange: stockInfo.market
+            };
+
+            apiCache.set(cacheKey, asset, 60000); // 1분 캐시
+            results.push(asset);
+            continue;
+          }
+        }
+      }
+
+      // Yahoo Finance 실패시 모의 데이터 사용
+      const basePrice = 50000 + Math.random() * 200000;
+      const changePercent = (Math.random() - 0.5) * 10;
+      
+      const fallbackAsset: UniversalAsset = {
+        id: symbol,
+        symbol: symbol,
+        name: stockInfo.name,
+        price: basePrice,
+        change: basePrice * changePercent / 100,
+        changePercent: changePercent,
+        volume: Math.floor(Math.random() * 1000000),
+        type: 'stock',
+        market: 'KR' as const,
+        sector: stockInfo.sector,
+        currency: 'KRW',
+        exchange: stockInfo.market
+      };
+
+      results.push(fallbackAsset);
+
+    } catch (error) {
+      console.error(`${symbol} 한국 주식 가격 조회 오류:`, error);
+    }
   }
 
   return results;
@@ -379,11 +438,24 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
       sources.push('Yahoo Finance');
     }
 
-    // 3. 국내 주식 검색
-    const krMatches = KOREAN_STOCKS.filter(stock =>
-      stock.symbol.includes(query) ||
-      stock.name.includes(query)
-    );
+    // 3. 국내 주식 검색 (한글/영문 모두 지원)
+    const normalizedQuery = query.toLowerCase();
+    const krMatches = KOREAN_STOCKS.filter(stock => {
+      // 종목코드로 검색
+      if (stock.symbol.includes(query)) return true;
+      
+      // 한글 이름으로 검색
+      if (stock.name.includes(query)) return true;
+      
+      // 영문 이름으로 검색 (있는 경우)
+      if (stock.englishName && stock.englishName.toLowerCase().includes(normalizedQuery)) return true;
+      
+      // 부분 일치 검색 (한글)
+      const koreanChars = query.match(/[가-힣]+/g);
+      if (koreanChars && koreanChars.some(char => stock.name.includes(char))) return true;
+      
+      return false;
+    });
 
     if (krMatches.length > 0) {
       const krPrices = await fetchKRStockPrices(krMatches.slice(0, 10).map(s => s.symbol));

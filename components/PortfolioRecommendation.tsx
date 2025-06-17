@@ -168,8 +168,14 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   const handleAnalyzePortfolio = () => {
     if (selectedAssets.length === 0) return;
     
-    const currentStrategy = portfolioStrategies[investorProfile.type];
-    const allocations = currentStrategy ? currentStrategy.allocation : {};
+    // 선택된 자산들에 대해 균등 분배로 초기 설정
+    const equalAllocation = 100 / selectedAssets.length;
+    const allocations: Record<string, number> = {};
+    
+    selectedAssets.forEach(asset => {
+      const assetId = asset.symbol || asset.ticker || asset.id || '';
+      allocations[assetId] = equalAllocation;
+    });
     
     onAnalyze(selectedAssets, allocations);
   };
