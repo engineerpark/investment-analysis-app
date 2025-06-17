@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export',
+    trailingSlash: true,
+  }),
   images: {
     unoptimized: true
+  },
+  // Fast Refresh 최적화
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts']
   }
 }
 

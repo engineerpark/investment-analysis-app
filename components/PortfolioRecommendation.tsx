@@ -352,8 +352,8 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   }
 
   return (
-    <div className="w-full bg-white" style={{ width: '393px', height: '852px' }}>
-      <div className="h-full flex flex-col">
+    <div className="w-full bg-white" style={{ width: '393px', height: '852px', minHeight: '852px' }}>
+      <div className="h-full flex flex-col" style={{ minHeight: '852px' }}>
         {/* 스크롤 가능한 메인 컨텐츠 */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 py-6 space-y-6">
@@ -514,12 +514,12 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
             </div>
 
             {/* 하단 여백 - 버튼 영역을 위한 공간 확보 */}
-            <div className="h-40"></div>
+            <div className="h-48"></div>
           </div>
         </div>
 
         {/* 하단 고정 버튼 */}
-        <div className="flex-shrink-0 px-4 pb-6 pt-4 bg-white border-t border-gray-200">
+        <div className="flex-shrink-0 px-4 pt-4 bg-gray-50 border-t-2 border-gray-300 shadow-lg relative z-20" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
           {selectedAssets.length > 0 ? (
             <div className="space-y-3">
               <div className="text-center text-xs text-gray-500">
@@ -529,7 +529,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                 <Button 
                   variant="success"
                   size="touch"
-                  className="w-full"
+                  className="w-full shadow-lg"
                   onClick={handleAnalyzePortfolio}
                 >
                   <ArrowRight className="h-5 w-5 mr-2" />
@@ -539,7 +539,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                   <Button 
                     variant="secondary"
                     size="touch"
-                    className="w-full"
+                    className="w-full shadow-md"
                     onClick={handleSavePortfolioDirectly}
                   >
                     <Plus className="h-5 w-5 mr-2" />

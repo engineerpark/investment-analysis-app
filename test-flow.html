@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포트폴리오 플로우 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { border: 1px solid #ccc; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .step { margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .button { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin: 5px; }
+        .secondary { background: #6c757d; }
+        .outline { background: white; color: #007bff; border: 1px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 투자 성향 분석 → 포트폴리오 저장 플로우 테스트</h1>
+    
+    <div class="test-case">
+        <h2>📋 테스트 시나리오</h2>
+        <div class="step">
+            <h3>1️⃣ 단계: 홈 화면</h3>
+            <p>✅ "투자 성향 분석" 버튼 클릭</p>
+            <button class="button">투자 성향 분석</button>
+        </div>
+        
+        <div class="step">
+            <h3>2️⃣ 단계: 투자성향분석 설문</h3>
+            <p>✅ 설문 완료 후 포트폴리오 추천으로 이동</p>
+            <button class="button">설문 완료</button>
+        </div>
+        
+        <div class="step">
+            <h3>3️⃣ 단계: 포트폴리오 추천 (핵심 테스트)</h3>
+            <p>📊 진행 단계 표시: "단계 1/3: 자산 선택"</p>
+            <p>🔍 자산 검색 및 선택</p>
+            <p><strong>🎯 핵심 검증 포인트:</strong></p>
+            <ul>
+                <li class="success">✅ "다음: 비중 조정하기" 버튼 표시</li>
+                <li class="success">✅ "포트폴리오 바로 저장 (균등분배)" 버튼 표시</li>
+                <li class="success">✅ 자산 선택 시 "다음 단계 가능" 피드백</li>
+            </ul>
+            
+            <div style="margin: 10px 0;">
+                <button class="button">다음: 비중 조정하기</button>
+                <button class="button outline">포트폴리오 바로 저장 (균등분배)</button>
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>4️⃣ 단계: 비중 조정</h3>
+            <p>📊 진행 단계 표시: "단계 2/3: 비중 조정"</p>
+            <p>⚖️ 슬라이더로 비중 조정</p>
+            <button class="button">다음: 대시보드 보기</button>
+            <button class="button outline">포트폴리오 저장</button>
+        </div>
+        
+        <div class="step">
+            <h3>5️⃣ 단계: 포트폴리오 저장 완료</h3>
+            <p>💾 포트폴리오 목록으로 이동</p>
+            <p class="success">✅ 플로우 완료!</p>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h2>🔍 실제 테스트 결과</h2>
+        <div id="test-results">
+            <p class="warning">⚠️ 실제 웹사이트에서 테스트가 필요합니다:</p>
+            <ol>
+                <li>https://investment-analysis-app.vercel.app 접속</li>
+                <li>"투자 성향 분석" 클릭</li>
+                <li>설문 완료</li>
+                <li>자산 선택 후 버튼 확인</li>
+                <li>전체 플로우 실행</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="test-case">
+        <h2>🚨 예상 문제점 및 해결방안</h2>
+        <div class="step error">
+            <h3>문제 1: Vercel 배포 지연</h3>
+            <p>- GitHub 푸시 후 Vercel 자동 배포에 시간이 걸림</p>
+            <p>- 해결: 5-10분 대기 후 재테스트</p>
+        </div>
+        
+        <div class="step error">
+            <h3>문제 2: 캐시 문제</h3>
+            <p>- 브라우저 캐시로 인한 이전 버전 표시</p>
+            <p>- 해결: Ctrl+F5 또는 시크릿 모드로 접속</p>
+        </div>
+        
+        <div class="step error">
+            <h3>문제 3: JavaScript 오류</h3>
+            <p>- 런타임 에러로 인한 기능 작동 불가</p>
+            <p>- 해결: 개발자 도구 콘솔 확인</p>
+        </div>
+    </div>
+    
+    <script>
+        // 실제 테스트 시뮬레이션
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 포트폴리오 플로우 테스트 페이지 로드됨');
+            console.log('📝 테스트 체크리스트:');
+            console.log('  1. 홈 → 투자성향분석');
+            console.log('  2. 설문 → 포트폴리오 추천');
+            console.log('  3. 자산 선택 → 두 개 버튼 확인');
+            console.log('  4. 비중 조정 → 저장');
+            console.log('  5. 포트폴리오 목록 확인');
+        });
+    </script>
+</body>
+</html>
