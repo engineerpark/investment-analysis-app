@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>플로팅 버튼 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 추가적인 반응형 스타일 */
+        .floating-button-container {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: min(393px, 100vw);
+            padding: 16px;
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
+            background: linear-gradient(to top, white, white, transparent);
+            z-index: 50;
+        }
+        
+        .main-button {
+            width: 100%;
+            height: 48px;
+            min-height: 48px;
+            min-width: 200px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            font-size: clamp(14px, 3.5vw, 16px);
+            touch-action: manipulation;
+            transition: all 0.2s;
+        }
+        
+        .main-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .main-button:active {
+            transform: scale(0.95);
+        }
+        
+        .secondary-button {
+            width: 100%;
+            height: 32px;
+            min-height: 32px;
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(4px);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            color: #374151;
+            font-size: clamp(12px, 3vw, 14px);
+            touch-action: manipulation;
+            transition: all 0.2s;
+        }
+        
+        .secondary-button:hover {
+            background: #f9fafb;
+        }
+        
+        .info-card {
+            text-align: center;
+            padding: 12px 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 화면 크기별 테스트 프레임 */
+        .test-frame {
+            border: 2px solid #3b82f6;
+            margin: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .test-frame::before {
+            content: attr(data-size);
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #3b82f6;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 100;
+        }
+        
+        @media (min-width: 640px) {
+            .main-button {
+                height: 56px;
+                font-size: 16px;
+            }
+            .secondary-button {
+                height: 40px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-6 text-center">플로팅 버튼 반응형 테스트</h1>
+        
+        <!-- 모바일 320px -->
+        <div class="test-frame" data-size="Mobile 320px" style="width: 320px; height: 500px;">
+            <div class="w-full h-full bg-white relative">
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold mb-4">포트폴리오 추천</h2>
+                    <div class="space-y-4">
+                        <div class="bg-gray-100 p-3 rounded">자산 1: Apple Inc.</div>
+                        <div class="bg-gray-100 p-3 rounded">자산 2: Samsung Electronics</div>
+                        <div class="bg-gray-100 p-3 rounded">자산 3: Bitcoin</div>
+                    </div>
+                </div>
+                
+                <!-- 플로팅 버튼 -->
+                <div class="floating-button-container">
+                    <button class="main-button">
+                        <span class="inline-flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <span class="hidden sm:inline">비중 조정하기 (3개)</span>
+                            <span class="sm:hidden">비중조정 (3개)</span>
+                        </span>
+                    </button>
+                    <button class="secondary-button">
+                        <span class="inline-flex items-center justify-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span class="hidden sm:inline">균등분배로 바로 저장</span>
+                            <span class="sm:hidden">바로저장</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 모바일 393px -->
+        <div class="test-frame" data-size="Mobile 393px (iPhone 14)" style="width: 393px; height: 500px;">
+            <div class="w-full h-full bg-white relative">
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold mb-4">포트폴리오 추천</h2>
+                    <div class="space-y-4">
+                        <div class="bg-gray-100 p-3 rounded">자산 1: Apple Inc.</div>
+                        <div class="bg-gray-100 p-3 rounded">자산 2: Samsung Electronics</div>
+                        <div class="bg-gray-100 p-3 rounded">자산 3: Bitcoin</div>
+                        <div class="bg-gray-100 p-3 rounded">자산 4: Tesla Inc.</div>
+                    </div>
+                </div>
+                
+                <!-- 플로팅 버튼 -->
+                <div class="floating-button-container">
+                    <button class="main-button">
+                        <span class="inline-flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <span class="hidden sm:inline">비중 조정하기 (4개)</span>
+                            <span class="sm:hidden">비중조정 (4개)</span>
+                        </span>
+                    </button>
+                    <button class="secondary-button">
+                        <span class="inline-flex items-center justify-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span class="hidden sm:inline">균등분배로 바로 저장</span>
+                            <span class="sm:hidden">바로저장</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 태블릿 768px -->
+        <div class="test-frame" data-size="Tablet 768px" style="width: 768px; height: 500px;">
+            <div class="w-full h-full bg-white relative">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold mb-6">포트폴리오 추천</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-100 p-4 rounded">자산 1: Apple Inc.</div>
+                        <div class="bg-gray-100 p-4 rounded">자산 2: Samsung Electronics</div>
+                        <div class="bg-gray-100 p-4 rounded">자산 3: Bitcoin</div>
+                        <div class="bg-gray-100 p-4 rounded">자산 4: Tesla Inc.</div>
+                        <div class="bg-gray-100 p-4 rounded">자산 5: NVIDIA Corp.</div>
+                        <div class="bg-gray-100 p-4 rounded">자산 6: Ethereum</div>
+                    </div>
+                </div>
+                
+                <!-- 플로팅 버튼 -->
+                <div class="floating-button-container">
+                    <button class="main-button">
+                        <span class="inline-flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            <span class="hidden sm:inline">비중 조정하기 (6개)</span>
+                            <span class="sm:hidden">비중조정 (6개)</span>
+                        </span>
+                    </button>
+                    <button class="secondary-button">
+                        <span class="inline-flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span class="hidden sm:inline">균등분배로 바로 저장</span>
+                            <span class="sm:hidden">바로저장</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 자산 미선택 상태 테스트 -->
+        <div class="test-frame" data-size="No Assets Selected" style="width: 393px; height: 400px;">
+            <div class="w-full h-full bg-white relative">
+                <div class="p-4">
+                    <h2 class="text-lg font-semibold mb-4">포트폴리오 추천</h2>
+                    <div class="text-center py-8">
+                        <div class="text-gray-500 mb-2">선택된 자산이 없습니다</div>
+                        <div class="text-sm text-gray-400">자산을 검색하여 추가해보세요</div>
+                    </div>
+                </div>
+                
+                <!-- 플로팅 안내 메시지 -->
+                <div class="floating-button-container">
+                    <div class="info-card">
+                        <svg class="w-5 h-5 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm text-gray-600 font-medium">최소 1개 이상의 자산을 선택해주세요</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <span class="hidden sm:inline">위의 검색을 통해 자산을 추가해보세요</span>
+                            <span class="sm:hidden">자산을 추가해보세요</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 터치 친화적 상호작용 테스트
+        document.querySelectorAll('.main-button, .secondary-button').forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.95)';
+            });
+            
+            button.addEventListener('touchend', function() {
+                this.style.transform = '';
+                setTimeout(() => {
+                    alert('버튼이 정상적으로 클릭되었습니다!');
+                }, 100);
+            });
+            
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Button clicked:', this.textContent.trim());
+            });
+        });
+        
+        // 화면 크기 정보 표시
+        function updateScreenInfo() {
+            const info = document.getElementById('screen-info') || document.createElement('div');
+            info.id = 'screen-info';
+            info.style.cssText = 'position: fixed; top: 10px; right: 10px; background: #1f2937; color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; z-index: 1000;';
+            info.innerHTML = `
+                <div>Screen: ${window.innerWidth}x${window.innerHeight}</div>
+                <div>Viewport: ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}</div>
+            `;
+            if (!document.getElementById('screen-info')) {
+                document.body.appendChild(info);
+            }
+        }
+        
+        updateScreenInfo();
+        window.addEventListener('resize', updateScreenInfo);
+    </script>
+</body>
+</html>
