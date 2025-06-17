@@ -48,6 +48,11 @@ export default function App() {
     SavedPortfolio[]
   >([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isViewingPublicPortfolio, setIsViewingPublicPortfolio] = useState(false);
+  const [currentPortfolioAuthor, setCurrentPortfolioAuthor] = useState<{
+    name: string;
+    isVerified?: boolean;
+  } | undefined>(undefined);
 
   // Initialize API system on app startup
   useEffect(() => {
@@ -160,10 +165,14 @@ export default function App() {
       rebalancingPeriod: "monthly",
       exchangeRate: 1380,
     });
+    setIsViewingPublicPortfolio(false);
+    setCurrentPortfolioAuthor(undefined);
   };
 
   const handleBackToPortfolioList = () => {
     setCurrentStep("portfolioList");
+    setIsViewingPublicPortfolio(false);
+    setCurrentPortfolioAuthor(undefined);
   };
 
   const handleViewPortfolioFromList = (
@@ -173,6 +182,12 @@ export default function App() {
     setInvestorProfile(portfolio.investorProfile);
     setSelectedAssets(portfolio.assets);
     setAllocations(portfolio.allocations);
+    
+    // 공개 포트폴리오인지 확인 (author가 있으면 공개 포트폴리오)
+    const isPublic = !!portfolio.author;
+    setIsViewingPublicPortfolio(isPublic);
+    setCurrentPortfolioAuthor(portfolio.author);
+    
     setCurrentStep("dashboard");
   };
 
@@ -290,6 +305,8 @@ export default function App() {
             onNewPortfolio={handleSavePortfolio}
             onAdvancedAnalysis={handleAdvancedAnalysis}
             onRiskManagement={handleRiskManagement}
+            isPublicView={isViewingPublicPortfolio}
+            portfolioAuthor={currentPortfolioAuthor}
           />
         )}
       </div>
