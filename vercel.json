@@ -4,6 +4,32 @@
   "framework": "nextjs",
   "env": {
     "NODE_ENV": "production",
-    "VERCEL_FORCE_DEPLOY": "true"
-  }
+    "VERCEL_FORCE_DEPLOY": "1750517850",
+    "ATOMIC_DEPLOY": "true",
+    "TARGET_COMMIT": "018cd66"
+  },
+  "functions": {
+    "pages/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "X-Force-Deploy",
+          "value": "1750517850"
+        },
+        {
+          "key": "X-Target-Commit",
+          "value": "018cd66"
+        }
+      ]
+    }
+  ]
 }

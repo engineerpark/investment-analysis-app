@@ -1,0 +1,10 @@
+{
+  "atomic_deployment": true,
+  "force_rebuild": true,
+  "target_commit": "018cd66",
+  "timestamp": "2025-06-21T23:57:30Z",
+  "cache_bust": "EXTREME",
+  "version": "1.1.0",
+  "deployment_id": "FINAL_KOREAN_DESIGN_WITH_LED",
+  "vercel_force": true
+}
