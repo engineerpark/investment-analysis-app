@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, PieChart, BarChart3, ArrowRight, DollarSign, Plus } from 'lucide-react';
+import { ArrowLeft, PieChart, BarChart3, ArrowRight, DollarSign, Plus, Save } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { InvestorProfile } from '../App';
 
