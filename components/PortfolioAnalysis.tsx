@@ -589,40 +589,37 @@ export default function PortfolioAnalysis({
           </div>
         </div>
 
-        {/* Fixed Action Buttons at Bottom */}
-        <div className="flex-shrink-0 px-4 pb-4 pt-2 bg-background border-t border-border space-y-3">
-          <Button 
-            className="w-full h-12"
-            variant="success"
-            onClick={handleGoToDashboard}
-          >
-            <ArrowRight className="h-4 w-4 mr-2" />
-            다음: 대시보드 보기
-          </Button>
-          <Button 
-            variant="success" 
-            className="w-full h-12"
-            onClick={() => {
-              const settings: InvestmentSettings = {
-                initialInvestment,
-                rebalancingAmount,
-                rebalancingPeriod,
-                exchangeRate
-              };
-              onSave(allocations, settings);
-            }}
-          >
-            포트폴리오 저장
-          </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full h-12"
-            onClick={onBack}
-          >
-            뒤로 가기
-          </Button>
-        </div>
+        {/* 추가 여백을 위한 패딩 */}
+        <div className="h-20"></div>
       </div>
+      
+      {/* Floating Next Button */}
+      <button 
+        onClick={handleGoToDashboard}
+        className="floating-next-button multiple-buttons"
+        aria-label="다음: 대시보드 보기"
+      >
+        <span className="next-icon">→</span>
+        <span className="next-text">다음: 대시보드</span>
+      </button>
+      
+      {/* Floating Save Button */}
+      <button 
+        onClick={() => {
+          const settings: InvestmentSettings = {
+            initialInvestment,
+            rebalancingAmount,
+            rebalancingPeriod,
+            exchangeRate
+          };
+          onSave(allocations, settings);
+        }}
+        className="floating-save-button multiple-buttons"
+        aria-label="포트폴리오 저장"
+      >
+        <span className="save-icon">💾</span>
+        <span className="save-text">포트폴리오 저장</span>
+      </button>
     </div>
   );
 }
