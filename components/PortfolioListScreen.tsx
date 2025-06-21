@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, Users, Star, Heart, BookOpen, Brain, Link } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, Users, Star, Heart, BookOpen, Brain, Link, Activity } from 'lucide-react';
 
 interface SavedPortfolio {
   id: string;
@@ -36,6 +36,7 @@ interface PortfolioListScreenProps {
   onEducationCenter?: () => void;
   onPersonalizedRecommendations?: () => void;
   onExternalIntegrations?: () => void;
+  onApiStatus?: () => void;
 }
 
 export default function PortfolioListScreen({ 
@@ -45,7 +46,8 @@ export default function PortfolioListScreen({
   currentUserPortfolios,
   onEducationCenter,
   onPersonalizedRecommendations,
-  onExternalIntegrations
+  onExternalIntegrations,
+  onApiStatus
 }: PortfolioListScreenProps) {
   const [selectedTab, setSelectedTab] = useState<'my' | 'public'>('my');
 
@@ -410,6 +412,22 @@ export default function PortfolioListScreen({
                           <div className="flex-1">
                             <h4 className="font-medium">외부 서비스 연동</h4>
                             <p className="text-xs text-muted-foreground">계좌 연동, 뉴스 피드, 경제 지표</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {onApiStatus && (
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onApiStatus}>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                            <Activity className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-medium">API 연동 상태</h4>
+                            <p className="text-xs text-muted-foreground">실시간 데이터 연결 상태 확인</p>
                           </div>
                         </div>
                       </CardContent>

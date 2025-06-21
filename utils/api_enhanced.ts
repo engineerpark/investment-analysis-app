@@ -6,43 +6,48 @@
  * - 여러 API 소스 활용
  */
 
-// 환경 설정
+// 환경 설정 - 실제 API 키 사용
+const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || 'CG-XDJgFHwfoyMMnxq5UuWfqvaw';
+const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'W81KZ2JQNEQY76VG';
+
 const API_ENDPOINTS = {
-  // 암호화폐 - CoinGecko (무료, 신뢰도 높음)
+  // 암호화폐 - CoinGecko (Pro API 키 사용)
   COINGECKO: {
     search: 'https://api.coingecko.com/api/v3/search',
     price: 'https://api.coingecko.com/api/v3/simple/price',
     trending: 'https://api.coingecko.com/api/v3/search/trending',
     coins: 'https://api.coingecko.com/api/v3/coins/markets',
+    global: 'https://api.coingecko.com/api/v3/global'
   },
   
-  // 해외 주식 - Yahoo Finance (무료, 광범위)
+  // Alpha Vantage (실제 API 키 사용)
+  ALPHA_VANTAGE: {
+    quote: 'https://www.alphavantage.co/query',
+    search: 'https://www.alphavantage.co/query',
+    apiKey: ALPHA_VANTAGE_API_KEY
+  },
+  
+  // 해외 주식 - Yahoo Finance (백업용)
   YAHOO: {
     search: 'https://query1.finance.yahoo.com/v1/finance/search',
     quote: 'https://query1.finance.yahoo.com/v8/finance/chart/',
     lookup: 'https://query2.finance.yahoo.com/v1/finance/lookup',
   },
   
-  // 국내 주식 - KIS Developers (무료 티어 제공)
+  // 국내 주식 - KIS Developers (추후 확장용)
   KIS: {
     base: 'https://openapi.koreainvestment.com:9443',
-    // 실제 구현시 OAuth 토큰 필요
+    // OAuth 토큰 발급 후 사용
   },
   
-  // 대안 주식 API - Finnhub (무료 티어)
+  // 대안 API들
   FINNHUB: {
     search: 'https://finnhub.io/api/v1/search',
     quote: 'https://finnhub.io/api/v1/quote',
-    token: 'demo', // 실제 사용시 토큰 필요
+    token: 'demo',
   },
   
-  // Alpha Vantage (한국 주식 지원)
-  ALPHA_VANTAGE: {
-    search: 'https://www.alphavantage.co/query',
-    apiKey: 'demo' // 실제 사용시 API 키 필요
-  },
-  
-  // 한국거래소 실시간 시세 (CORS 우회 필요)
+  // 한국거래소 (CORS 우회 필요)
   KRX: {
     search: 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd',
     quote: 'https://api.stock.naver.com/stock/'
@@ -218,7 +223,7 @@ const CRYPTOCURRENCIES = [
   { symbol: 'FIL', name: 'Filecoin', geckoId: 'filecoin' },
 ];
 
-// 암호화폐 가격 조회 (CoinGecko)
+// 암호화폐 가격 조회 (CoinGecko Pro API)
 async function fetchCryptoPrices(symbols: string[]): Promise<UniversalAsset[]> {
   try {
     const geckoIds = symbols.map(symbol => {
@@ -228,11 +233,24 @@ async function fetchCryptoPrices(symbols: string[]): Promise<UniversalAsset[]> {
 
     if (geckoIds.length === 0) return [];
 
+    // CoinGecko Pro API 헤더 설정
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    // API 키가 있으면 Pro API 사용
+    if (COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo') {
+      headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+    }
+
     const response = await fetch(
-      `${API_ENDPOINTS.COINGECKO.price}?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`
+      `${API_ENDPOINTS.COINGECKO.price}?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true&precision=2`,
+      { headers }
     );
 
-    if (!response.ok) throw new Error('CoinGecko API 오류');
+    if (!response.ok) {
+      throw new Error(`CoinGecko API 오류: ${response.status} - ${response.statusText}`);
+    }
 
     const data = await response.json();
     
@@ -263,20 +281,84 @@ async function fetchCryptoPrices(symbols: string[]): Promise<UniversalAsset[]> {
   }
 }
 
-// 해외 주식 가격 조회 (Yahoo Finance)
+// Alpha Vantage를 사용한 실시간 주식 데이터 조회
+async function fetchAlphaVantageStock(symbol: string): Promise<UniversalAsset | null> {
+  try {
+    const cacheKey = `alpha_stock_${symbol}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return cached;
+
+    const response = await fetch(
+      `${API_ENDPOINTS.ALPHA_VANTAGE.quote}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Alpha Vantage API 오류: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // API 오류 응답 확인
+    if (data['Error Message'] || data['Note']) {
+      console.warn(`Alpha Vantage 제한: ${data['Error Message'] || data['Note']}`);
+      return null;
+    }
+
+    const quote = data['Global Quote'];
+    if (!quote || Object.keys(quote).length === 0) {
+      console.warn(`Alpha Vantage에서 ${symbol} 데이터를 찾을 수 없습니다`);
+      return null;
+    }
+
+    const stockInfo = US_STOCKS.find(s => s.symbol === symbol);
+    
+    const asset: UniversalAsset = {
+      id: symbol,
+      symbol: symbol,
+      name: stockInfo?.name || quote['01. symbol'] || symbol,
+      price: parseFloat(quote['05. price']) || 0,
+      change: parseFloat(quote['09. change']) || 0,
+      changePercent: parseFloat(quote['10. change percent']?.replace('%', '')) || 0,
+      volume: parseInt(quote['06. volume']) || 0,
+      type: stockInfo?.sector === 'ETF' ? 'etf' : 'stock',
+      market: 'US' as const,
+      sector: stockInfo?.sector || 'Technology',
+      currency: 'USD',
+      exchange: stockInfo?.market || 'NASDAQ'
+    };
+
+    // 30초 캐시
+    apiCache.set(cacheKey, asset, 30000);
+    return asset;
+
+  } catch (error) {
+    console.error(`Alpha Vantage ${symbol} 조회 오류:`, error);
+    return null;
+  }
+}
+
+// 해외 주식 가격 조회 (Alpha Vantage 우선, Yahoo Finance 백업)
 async function fetchUSStockPrices(symbols: string[]): Promise<UniversalAsset[]> {
   const results: UniversalAsset[] = [];
   
   for (const symbol of symbols) {
     try {
-      const cacheKey = `us_stock_${symbol}`;
+      // 1순위: Alpha Vantage API 시도
+      let asset = await fetchAlphaVantageStock(symbol);
+      
+      if (asset) {
+        results.push(asset);
+        continue;
+      }
+
+      // 2순위: Yahoo Finance 백업 (기존 코드)
+      const cacheKey = `yahoo_stock_${symbol}`;
       const cached = apiCache.get(cacheKey);
       if (cached) {
         results.push(cached);
         continue;
       }
 
-      // Yahoo Finance API 호출
       const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${symbol}?interval=1d&range=1d`);
       
       if (!response.ok) continue;
@@ -287,13 +369,12 @@ async function fetchUSStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
       if (!result) continue;
 
       const meta = result.meta;
-      const quote = result.indicators?.quote?.[0];
       
-      if (!meta || !quote) continue;
+      if (!meta) continue;
 
       const stockInfo = US_STOCKS.find(s => s.symbol === symbol);
       
-      const asset: UniversalAsset = {
+      asset = {
         id: symbol,
         symbol: symbol,
         name: stockInfo?.name || meta.symbol,
@@ -309,12 +390,15 @@ async function fetchUSStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
         exchange: meta.exchangeName
       };
 
-      apiCache.set(cacheKey, asset);
+      apiCache.set(cacheKey, asset, 60000);
       results.push(asset);
 
     } catch (error) {
       console.error(`${symbol} 주식 가격 조회 오류:`, error);
     }
+
+    // API 제한을 고려해 요청 간 대기
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
 
   return results;
@@ -555,17 +639,67 @@ export async function fetchMultipleAssetPrices(assets: Array<{symbol: string, ty
   return [...cryptos, ...usStocks, ...krStocks];
 }
 
+// API 연결 상태 테스트
+export async function testAPIConnections(): Promise<{[key: string]: boolean}> {
+  const testResults: {[key: string]: boolean} = {};
+  
+  // CoinGecko API 테스트
+  try {
+    const headers: HeadersInit = { 'Accept': 'application/json' };
+    if (COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo') {
+      headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+    }
+    
+    const response = await fetch('https://api.coingecko.com/api/v3/ping', { headers });
+    testResults['CoinGecko'] = response.ok;
+  } catch (error) {
+    testResults['CoinGecko'] = false;
+  }
+  
+  // Alpha Vantage API 테스트
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.ALPHA_VANTAGE.quote}?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${ALPHA_VANTAGE_API_KEY}`
+    );
+    const data = await response.json();
+    testResults['Alpha Vantage'] = !data['Error Message'] && !data['Note'];
+  } catch (error) {
+    testResults['Alpha Vantage'] = false;
+  }
+  
+  // Yahoo Finance API 테스트
+  try {
+    const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d');
+    testResults['Yahoo Finance'] = response.ok;
+  } catch (error) {
+    testResults['Yahoo Finance'] = false;
+  }
+  
+  return testResults;
+}
+
 // API 시스템 초기화
-export function initializeAPI(): Promise<void> {
-  return new Promise((resolve) => {
-    console.log('Enhanced API 시스템 초기화 완료');
-    console.log('지원 자산:', {
-      암호화폐: CRYPTOCURRENCIES.length,
-      해외주식: US_STOCKS.length,
-      국내주식: KOREAN_STOCKS.length
-    });
-    resolve();
+export async function initializeAPI(): Promise<void> {
+  console.log('🚀 Enhanced API 시스템 초기화 중...');
+  
+  // API 키 확인
+  console.log('📊 API 키 상태:');
+  console.log(`  - CoinGecko: ${COINGECKO_API_KEY ? '✅ 설정됨' : '❌ 없음'}`);
+  console.log(`  - Alpha Vantage: ${ALPHA_VANTAGE_API_KEY ? '✅ 설정됨' : '❌ 없음'}`);
+  
+  // API 연결 테스트
+  const testResults = await testAPIConnections();
+  console.log('🔍 API 연결 테스트:');
+  Object.entries(testResults).forEach(([api, status]) => {
+    console.log(`  - ${api}: ${status ? '✅ 정상' : '❌ 실패'}`);
   });
+  
+  console.log('📈 지원 자산:');
+  console.log(`  - 암호화폐: ${CRYPTOCURRENCIES.length}개`);
+  console.log(`  - 해외주식: ${US_STOCKS.length}개`);
+  console.log(`  - 국내주식: ${KOREAN_STOCKS.length}개`);
+  
+  console.log('✅ API 시스템 초기화 완료');
 }
 
 // 캐시 상태 확인

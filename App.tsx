@@ -12,6 +12,7 @@ import FuturePredictionScreen from "./components/FuturePredictionScreen";
 import EducationCenter from "./components/EducationCenter";
 import PersonalizedRecommendations from "./components/PersonalizedRecommendations";
 import ExternalIntegrations from "./components/ExternalIntegrations";
+import ApiStatus from "./components/ApiStatus";
 import { initializeAPI } from "./utils/api_enhanced";
 import type { Asset, InvestorProfile, InvestmentSettings, SavedPortfolio } from "./types/common";
 
@@ -32,6 +33,7 @@ export default function App() {
     | "education"
     | "recommendations"
     | "integrations"
+    | "apiStatus"
   >("home");
   const [investorProfile, setInvestorProfile] =
     useState<InvestorProfile | null>(null);
@@ -263,6 +265,10 @@ export default function App() {
     setCurrentStep("integrations");
   };
 
+  const handleApiStatus = () => {
+    setCurrentStep("apiStatus");
+  };
+
   const handleBackToDashboard = () => {
     setCurrentStep("dashboard");
   };
@@ -296,6 +302,7 @@ export default function App() {
               handlePersonalizedRecommendations
             }
             onExternalIntegrations={handleExternalIntegrations}
+            onApiStatus={handleApiStatus}
           />
         ) : currentStep === "survey" ? (
           <InvestmentSurvey onComplete={handleSurveyComplete} onBack={handleBackToHome} />
@@ -358,6 +365,10 @@ export default function App() {
         ) : currentStep === "integrations" ? (
           <ExternalIntegrations
             onBack={handleBackToPortfolioList}
+          />
+        ) : currentStep === "apiStatus" ? (
+          <ApiStatus
+            onClose={handleBackToPortfolioList}
           />
         ) : (
           <PortfolioDashboard
