@@ -1,0 +1,9 @@
+{
+  "trigger": "FORCE_DEPLOY",
+  "timestamp": "2025-06-21T23:51:30Z",
+  "commit": "7ae2d7a",
+  "version": "1.0.0",
+  "force": true,
+  "cache_bust": true,
+  "reason": "Manual force deploy requested"
+}
