@@ -1,0 +1,13 @@
+CRITICAL VERCEL CACHE BYPASS
+=============================
+
+PROBLEM: Vercel is stuck deploying commit 6ea5197 (wrong version)
+TARGET: Deploy commit e983f2f (correct Korean design + LED)
+
+SOLUTION: Complete branch reset and force push
+- New branch: main-force
+- Force push to override main branch
+- Break Vercel's cache completely
+
+TIMESTAMP: 2025-06-22 00:02:30
+FORCE_DEPLOY: EXTREME_RESET
