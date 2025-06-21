@@ -243,7 +243,7 @@ export default function PortfolioAnalysis({
   };
 
   return (
-    <div className="w-full bg-background" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full bg-background responsive-container">
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 py-8">
@@ -551,9 +551,15 @@ export default function PortfolioAnalysis({
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold">
-                        {formatCurrency(initialInvestment)}
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <p className="text-2xl font-bold">
+                          {formatCurrency(initialInvestment)}
+                        </p>
+                        <div className="api-status-led">
+                          <div className="api-led-dot connected"></div>
+                          <span>Alpha Vantage</span>
+                        </div>
+                      </div>
                       <p className="text-xs text-muted-foreground mb-1">
                         {formatKRW(initialInvestment)}
                       </p>
@@ -572,9 +578,15 @@ export default function PortfolioAnalysis({
                       <p className="text-xs text-muted-foreground">총 비중</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-medium">
-                        {formatCurrency(rebalancingAmount)}
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <p className="text-lg font-medium">
+                          {formatCurrency(rebalancingAmount)}
+                        </p>
+                        <div className="api-status-led">
+                          <div className="api-led-dot connected"></div>
+                          <span>CoinGecko</span>
+                        </div>
+                      </div>
                       <p className="text-xs text-muted-foreground mb-1">
                         {formatKRW(rebalancingAmount)}
                       </p>

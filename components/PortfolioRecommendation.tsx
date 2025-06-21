@@ -339,7 +339,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen bg-white flex items-center justify-center" style={{ width: '393px', height: '852px' }}>
+      <div className="w-full min-h-screen bg-white flex items-center justify-center responsive-container">
         <div className="text-center px-4">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
           <h2 className="text-lg mb-2">실시간 시세 로딩 중...</h2>
@@ -352,10 +352,10 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   }
 
   return (
-    <div className="w-full bg-white" style={{ width: '393px', height: '852px', minHeight: '852px' }}>
-      <div className="h-full flex flex-col" style={{ minHeight: '852px' }}>
+    <div className="w-full bg-white responsive-container">
+      <div className="h-full flex flex-col">
         {/* 스크롤 가능한 메인 컨텐츠 */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-4">
           <div className="px-4 py-6 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">

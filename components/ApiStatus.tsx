@@ -108,7 +108,7 @@ export default function ApiStatus({ onClose }: ApiStatusProps) {
   };
 
   return (
-    <div className="w-full bg-background" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full bg-background responsive-container">
       <div className="h-full flex flex-col overflow-y-auto">
         <div className="px-4 py-6">
           <div className="w-full max-w-none mx-auto space-y-4">

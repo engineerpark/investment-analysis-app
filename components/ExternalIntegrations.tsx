@@ -282,7 +282,7 @@ export default function ExternalIntegrations({ onBack }: ExternalIntegrationsPro
   };
 
   return (
-    <div className="w-full bg-background" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full bg-background responsive-container">
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 py-6">

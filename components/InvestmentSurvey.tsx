@@ -205,7 +205,7 @@ export default function InvestmentSurvey({ onComplete, onBack }: InvestmentSurve
   if (showResult) {
     const result = calculateResult();
     return (
-      <div className="w-full min-h-screen bg-background flex flex-col" style={{ width: '393px', height: '852px' }}>
+      <div className="w-full min-h-screen bg-background flex flex-col responsive-container">
         <div className="flex-1 overflow-y-auto px-4 py-8">
           <div className="w-full max-w-none mx-auto">
             <div className="space-y-6">
@@ -263,7 +263,7 @@ export default function InvestmentSurvey({ onComplete, onBack }: InvestmentSurve
   }
 
   return (
-    <div className="w-full min-h-screen bg-background flex flex-col" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full min-h-screen bg-background flex flex-col responsive-container">
       <div className="flex-1 overflow-y-auto px-4 py-8">
         <div className="w-full max-w-none mx-auto h-full flex flex-col">
           {/* Header */}

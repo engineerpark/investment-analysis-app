@@ -282,7 +282,7 @@ export default function PortfolioDashboard({
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen bg-background flex items-center justify-center" style={{ width: '393px', height: '852px' }}>
+      <div className="w-full min-h-screen bg-background flex items-center justify-center responsive-container">
         <div className="text-center px-4">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <h2 className="text-lg mb-2">포트폴리오 분석 중...</h2>
@@ -295,9 +295,9 @@ export default function PortfolioDashboard({
   }
 
   return (
-    <div className="w-full bg-background" style={{ width: '393px', height: '852px' }}>
+    <div className="w-full bg-background responsive-container">
       <div className="h-full flex flex-col">
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-4">
           <div className="px-4 py-8">
             <div className="w-full max-w-none mx-auto">
               {/* Header */}
@@ -350,6 +350,10 @@ export default function PortfolioDashboard({
                     <div className="flex items-center justify-center gap-2">
                       <DollarSign className="h-5 w-5 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">총 포트폴리오 가치</span>
+                      <div className="api-status-led">
+                        <div className="api-led-dot connected"></div>
+                        <span>API</span>
+                      </div>
                     </div>
                     <div className="text-3xl font-bold">
                       ${portfolioMetrics.totalValue.toLocaleString()}

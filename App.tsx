@@ -276,13 +276,7 @@ export default function App() {
   return (
     <div className="flex justify-center items-start min-h-screen bg-gray-100 py-4">
       <div
-        className="bg-white shadow-lg overflow-hidden rounded-lg"
-        style={{
-          width: "393px",
-          height: "852px",
-          maxWidth: "100vw",
-          maxHeight: "100vh",
-        }}
+        className="bg-white shadow-lg overflow-hidden rounded-lg responsive-container"
       >
         {currentStep === "home" ? (
           <HomeScreen
