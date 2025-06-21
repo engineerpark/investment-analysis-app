@@ -545,36 +545,79 @@ export default function PortfolioDashboard({
             </div>
           </div>
         </div>
+        </div>
+
+        {/* 하단 여백 - 플로팅 버튼을 위한 공간 확보 */}
+        <div className="h-32 sm:h-24 md:h-20 lg:h-16"></div>
       </div>
       
-      {/* Floating Save Button */}
-      {!isPublicView ? (
-        <button 
-          onClick={handleSavePortfolio} 
-          className={`floating-save-button ${isSaving ? 'saving' : ''} ${isSaved ? 'saved' : ''}`}
-          disabled={isSaving}
-          aria-label="포트폴리오 저장"
-        >
-          <span className="save-icon">
-            {isSaving ? '⏳' : isSaved ? '✓' : '💾'}
-          </span>
-          <span className="save-text">
-            {isSaving ? '저장 중...' : isSaved ? '저장됨!' : '포트폴리오 저장'}
-          </span>
-        </button>
-      ) : (
-        <button 
-          onClick={() => {
-            // 공개 포트폴리오를 내 포트폴리오로 복사
-            onNewPortfolio();
-          }} 
-          className="floating-save-button"
-          aria-label="내 포트폴리오로 복사"
-        >
-          <span className="save-icon">📋</span>
-          <span className="save-text">내 포트폴리오로 복사</span>
-        </button>
-      )}
+      {/* 플로팅 액션 버튼 - 모든 화면 크기 지원 */}
+      <div 
+        className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full px-4 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent z-50"
+        style={{ 
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          maxWidth: 'min(393px, 100vw)',
+          width: 'min(393px, 100vw)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+        role="toolbar"
+        aria-label="포트폴리오 액션 버튼"
+      >
+        {!isPublicView ? (
+          <Button 
+            variant="success"
+            size="touch"
+            className="w-full font-semibold shadow-2xl border-2 border-white transform transition-all duration-200 hover:scale-105 active:scale-95 
+                       h-12 text-sm sm:h-14 sm:text-base
+                       min-h-[48px] min-w-[200px]
+                       touch-manipulation focus:outline-none focus:ring-4 focus:ring-green-300"
+            onClick={handleSavePortfolio}
+            disabled={isSaving}
+            aria-label="포트폴리오 저장"
+            style={{
+              background: isSaved ? 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+              opacity: isSaving ? 0.7 : 1,
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" aria-hidden="true" style={{
+              animation: isSaving ? 'spin 1s linear infinite' : 'none'
+            }} />
+            <span className="hidden sm:inline">
+              {isSaving ? '저장 중...' : isSaved ? '저장됨!' : '포트폴리오 저장'}
+            </span>
+            <span className="sm:hidden">
+              {isSaving ? '저장 중...' : isSaved ? '저장됨!' : '포트폴리오 저장'}
+            </span>
+          </Button>
+        ) : (
+          <Button 
+            variant="success"
+            size="touch"
+            className="w-full font-semibold shadow-2xl border-2 border-white transform transition-all duration-200 hover:scale-105 active:scale-95 
+                       h-12 text-sm sm:h-14 sm:text-base
+                       min-h-[48px] min-w-[200px]
+                       touch-manipulation focus:outline-none focus:ring-4 focus:ring-blue-300"
+            onClick={() => {
+              // 공개 포트폴리오를 내 포트폴리오로 복사
+              onNewPortfolio();
+            }}
+            aria-label="내 포트폴리오로 복사"
+            style={{
+              background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+              boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+            }}
+          >
+            <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" aria-hidden="true" />
+            <span className="hidden sm:inline">내 포트폴리오로 복사</span>
+            <span className="sm:hidden">복사</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

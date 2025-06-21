@@ -589,37 +589,71 @@ export default function PortfolioAnalysis({
           </div>
         </div>
 
-        {/* 추가 여백을 위한 패딩 */}
-        <div className="h-20"></div>
+        {/* 하단 여백 - 플로팅 버튼을 위한 공간 확보 */}
+        <div className="h-32 sm:h-24 md:h-20 lg:h-16"></div>
       </div>
-      
-      {/* Floating Next Button */}
-      <button 
-        onClick={handleGoToDashboard}
-        className="floating-next-button multiple-buttons"
-        aria-label="다음: 대시보드 보기"
-      >
-        <span className="next-icon">→</span>
-        <span className="next-text">다음: 대시보드</span>
-      </button>
-      
-      {/* Floating Save Button */}
-      <button 
-        onClick={() => {
-          const settings: InvestmentSettings = {
-            initialInvestment,
-            rebalancingAmount,
-            rebalancingPeriod,
-            exchangeRate
-          };
-          onSave(allocations, settings);
+
+      {/* 플로팅 액션 버튼 - 모든 화면 크기 지원 */}
+      <div 
+        className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full px-4 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent z-50"
+        style={{ 
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          maxWidth: 'min(393px, 100vw)',
+          width: 'min(393px, 100vw)',
+          left: '50%',
+          transform: 'translateX(-50%)',
         }}
-        className="floating-save-button multiple-buttons"
-        aria-label="포트폴리오 저장"
+        role="toolbar"
+        aria-label="포트폴리오 분석 액션 버튼"
       >
-        <span className="save-icon">💾</span>
-        <span className="save-text">포트폴리오 저장</span>
-      </button>
+        {/* 다음: 대시보드 메인 버튼 */}
+        <Button 
+          variant="success"
+          size="touch"
+          className="w-full font-semibold shadow-2xl border-2 border-white transform transition-all duration-200 hover:scale-105 active:scale-95 
+                     h-12 text-sm sm:h-14 sm:text-base
+                     min-h-[48px] min-w-[200px]
+                     touch-manipulation focus:outline-none focus:ring-4 focus:ring-blue-300"
+          onClick={handleGoToDashboard}
+          aria-label="다음: 대시보드 보기"
+          style={{
+            background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+            boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            fontSize: 'clamp(14px, 3.5vw, 16px)',
+          }}
+        >
+          <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 mr-2" aria-hidden="true" />
+          <span className="hidden sm:inline">다음: 대시보드 보기</span>
+          <span className="sm:hidden">다음: 대시보드</span>
+        </Button>
+        
+        {/* 포트폴리오 저장 버튼 (세컨더리) */}
+        <Button 
+          variant="outline"
+          size="sm"
+          className="w-full mt-2 text-xs sm:text-sm shadow-lg bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-gray-50 transition-colors
+                     h-8 sm:h-10
+                     min-h-[32px]
+                     touch-manipulation focus:outline-none focus:ring-4 focus:ring-green-300"
+          onClick={() => {
+            const settings: InvestmentSettings = {
+              initialInvestment,
+              rebalancingAmount,
+              rebalancingPeriod,
+              exchangeRate
+            };
+            onSave(allocations, settings);
+          }}
+          aria-label="포트폴리오 저장"
+          style={{
+            fontSize: 'clamp(12px, 3vw, 14px)',
+          }}
+        >
+          <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
+          <span className="hidden sm:inline">포트폴리오 저장</span>
+          <span className="sm:hidden">저장</span>
+        </Button>
+      </div>
     </div>
   );
 }
