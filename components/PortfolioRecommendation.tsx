@@ -518,91 +518,42 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
           </div>
         </div>
 
-        {/* 플로팅 액션 버튼 - 모든 화면 크기 지원 */}
-        {selectedAssets.length > 0 && (
-          <div 
-            className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full px-4 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent z-50"
-            style={{ 
-              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-              maxWidth: 'min(393px, 100vw)',
-              width: 'min(393px, 100vw)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-            role="toolbar"
-            aria-label="포트폴리오 액션 버튼"
+      {/* Floating Buttons */}
+      {selectedAssets.length > 0 ? (
+        <>
+          {/* Floating Adjust Weight Button */}
+          <button 
+            onClick={handleAnalyzePortfolio}
+            className="floating-next-button multiple-buttons success"
+            aria-label={`${selectedAssets.length}개 자산의 비중을 조정하러 이동`}
           >
-            {/* 비중조정 메인 버튼 */}
-            <Button 
-              variant="success"
-              size="touch"
-              className="w-full font-semibold shadow-2xl border-2 border-white transform transition-all duration-200 hover:scale-105 active:scale-95 
-                         h-12 text-sm sm:h-14 sm:text-base
-                         min-h-[48px] min-w-[200px]
-                         touch-manipulation focus:outline-none focus:ring-4 focus:ring-green-300"
-              onClick={handleAnalyzePortfolio}
-              aria-label={`${selectedAssets.length}개 자산의 비중을 조정하러 이동`}
-              style={{
-                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                fontSize: 'clamp(14px, 3.5vw, 16px)',
-              }}
+            <span className="next-icon">⚖️</span>
+            <span className="next-text">비중조정 ({selectedAssets.length}개)</span>
+          </button>
+          
+          {/* Floating Save Button */}
+          {onSavePortfolio && (
+            <button 
+              onClick={handleSavePortfolioDirectly}
+              className="floating-save-button multiple-buttons"
+              aria-label={`${selectedAssets.length}개 자산을 균등분배로 바로 저장`}
             >
-              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 mr-2" aria-hidden="true" />
-              <span className="hidden sm:inline">비중 조정하기 ({selectedAssets.length}개)</span>
-              <span className="sm:hidden">비중조정 ({selectedAssets.length}개)</span>
-            </Button>
-            
-            {/* 바로 저장 버튼 (세컨더리) */}
-            {onSavePortfolio && (
-              <Button 
-                variant="outline"
-                size="sm"
-                className="w-full mt-2 text-xs sm:text-sm shadow-lg bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-gray-50 transition-colors
-                           h-8 sm:h-10
-                           min-h-[32px]
-                           touch-manipulation focus:outline-none focus:ring-4 focus:ring-blue-300"
-                onClick={handleSavePortfolioDirectly}
-                aria-label={`${selectedAssets.length}개 자산을 균등분배로 바로 저장`}
-                style={{
-                  fontSize: 'clamp(12px, 3vw, 14px)',
-                }}
-              >
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" aria-hidden="true" />
-                <span className="hidden sm:inline">균등분배로 바로 저장</span>
-                <span className="sm:hidden">바로저장</span>
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* 플로팅 안내 메시지 - 자산 미선택 시 */}
-        {selectedAssets.length === 0 && (
-          <div 
-            className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full px-4 pb-6 pt-4 bg-gradient-to-t from-white via-white to-transparent z-50"
-            style={{ 
-              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-              maxWidth: 'min(393px, 100vw)',
-              width: 'min(393px, 100vw)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-            role="status"
-            aria-live="polite"
-            aria-label="자산 선택 안내"
-          >
-            <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 shadow-lg">
-              <Info className="h-4 w-4 sm:h-5 sm:w-5 mx-auto mb-2 text-gray-500" aria-hidden="true" />
-              <p className="text-xs sm:text-sm text-gray-600 font-medium" style={{ fontSize: 'clamp(12px, 3vw, 14px)' }}>
-                최소 1개 이상의 자산을 선택해주세요
-              </p>
-              <p className="text-xs text-gray-500 mt-1" style={{ fontSize: 'clamp(11px, 2.5vw, 12px)' }}>
-                <span className="hidden sm:inline">위의 검색을 통해 자산을 추가해보세요</span>
-                <span className="sm:hidden">자산을 추가해보세요</span>
-              </p>
-            </div>
-          </div>
-        )}
+              <span className="save-icon">💾</span>
+              <span className="save-text">바로 저장</span>
+            </button>
+          )}
+        </>
+      ) : (
+        /* Info floating message when no assets selected */
+        <div className="floating-next-button" style={{ 
+          cursor: 'default', 
+          opacity: '0.8',
+          background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+        }}>
+          <span className="next-icon">ℹ️</span>
+          <span className="next-text">자산을 선택해주세요</span>
+        </div>
+      )}
       </div>
     </div>
   );
