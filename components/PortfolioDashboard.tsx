@@ -108,6 +108,8 @@ export default function PortfolioDashboard({
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   // 포트폴리오 메트릭 계산
   useEffect(() => {
@@ -238,6 +240,26 @@ export default function PortfolioDashboard({
   };
 
   const riskLevel = getRiskLevelText(portfolioMetrics.riskLevel);
+
+  // 포트폴리오 저장 핸들러
+  const handleSavePortfolio = async () => {
+    setIsSaving(true);
+    
+    try {
+      // 기존 onNewPortfolio 함수 호출
+      await onNewPortfolio();
+      
+      // 저장 성공 시
+      setIsSaved(true);
+      setTimeout(() => {
+        setIsSaved(false);
+      }, 2000);
+    } catch (error) {
+      console.error('포트폴리오 저장 실패:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // 커스텀 툴팁
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -511,41 +533,48 @@ export default function PortfolioDashboard({
                 </CardContent>
               </Card>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                {isPublicView ? (
-                  <Button 
-                    onClick={() => {
-                      // 공개 포트폴리오를 내 포트폴리오로 복사
-                      onNewPortfolio();
-                    }} 
-                    className="w-full" 
-                    size="lg"
-                    variant="primary"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    내 포트폴리오로 복사
-                  </Button>
-                ) : (
-                  <Button onClick={onNewPortfolio} className="w-full" size="lg" variant="success">
-                    <Save className="h-4 w-4 mr-2" />
-                    포트폴리오 저장
-                  </Button>
-                )}
-                
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground">
-                    마지막 업데이트: {lastUpdate.toLocaleTimeString('ko-KR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
-                </div>
+              {/* Last Update Info */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  마지막 업데이트: {lastUpdate.toLocaleTimeString('ko-KR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Floating Save Button */}
+      {!isPublicView ? (
+        <button 
+          onClick={handleSavePortfolio} 
+          className={`floating-save-button ${isSaving ? 'saving' : ''} ${isSaved ? 'saved' : ''}`}
+          disabled={isSaving}
+          aria-label="포트폴리오 저장"
+        >
+          <span className="save-icon">
+            {isSaving ? '⏳' : isSaved ? '✓' : '💾'}
+          </span>
+          <span className="save-text">
+            {isSaving ? '저장 중...' : isSaved ? '저장됨!' : '포트폴리오 저장'}
+          </span>
+        </button>
+      ) : (
+        <button 
+          onClick={() => {
+            // 공개 포트폴리오를 내 포트폴리오로 복사
+            onNewPortfolio();
+          }} 
+          className="floating-save-button"
+          aria-label="내 포트폴리오로 복사"
+        >
+          <span className="save-icon">📋</span>
+          <span className="save-text">내 포트폴리오로 복사</span>
+        </button>
+      )}
     </div>
   );
 }
