@@ -545,7 +545,6 @@ export default function PortfolioDashboard({
             </div>
           </div>
         </div>
-        </div>
 
         {/* 하단 여백 - 플로팅 버튼을 위한 공간 확보 */}
         <div className="h-32 sm:h-24 md:h-20 lg:h-16"></div>
