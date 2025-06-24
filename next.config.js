@@ -1,25 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
-  // Fast Refresh 최적화
-  experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts']
-  },
-  // API 키 환경 변수를 클라이언트에 노출
-  env: {
-    COINGECKO_API_KEY: process.env.COINGECKO_API_KEY,
-    ALPHA_VANTAGE_API_KEY: process.env.ALPHA_VANTAGE_API_KEY,
-  }
+  // 환경 변수는 Next.js가 자동으로 처리하므로 제거
+  // 대신 .env.local과 .env.production 파일 사용
 }
 
 module.exports = nextConfig
