@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투자 분석 앱 - 미리보기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .device-frame {
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .mobile-frame {
+            width: 375px;
+            height: 812px;
+        }
+        .tablet-frame {
+            width: 768px;
+            height: 1024px;
+        }
+        .desktop-frame {
+            width: 100%;
+            height: 800px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="preview-container">
+        <h1 class="text-3xl font-bold mb-8 text-center">투자 분석 앱 - 미리보기</h1>
+        
+        <!-- 디바이스 선택 버튼 -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button onclick="showDevice('mobile')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">모바일</button>
+            <button onclick="showDevice('tablet')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">태블릿</button>
+            <button onclick="showDevice('desktop')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">데스크톱</button>
+        </div>
+        
+        <!-- 미리보기 프레임 -->
+        <div id="mobile" class="device-frame mobile-frame mx-auto" style="display: none;">
+            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+        
+        <div id="tablet" class="device-frame tablet-frame mx-auto" style="display: none;">
+            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+        
+        <div id="desktop" class="device-frame desktop-frame" style="display: block;">
+            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+        
+        <!-- 기능 설명 -->
+        <div class="mt-12 bg-white rounded-lg p-8 shadow-lg">
+            <h2 class="text-2xl font-bold mb-6">주요 기능</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">🏠 홈 (대시보드)</h3>
+                    <ul class="text-gray-600 space-y-1 list-disc list-inside">
+                        <li>총 자산 현황 확인</li>
+                        <li>오늘의 수익 표시</li>
+                        <li>전일 대비 변동률 확인</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">📊 포트폴리오</h3>
+                    <ul class="text-gray-600 space-y-1 list-disc list-inside">
+                        <li>보유 자산 목록 관리</li>
+                        <li>자산별 수익률 분석</li>
+                        <li>포트폴리오 재구성 제안</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">📈 분석</h3>
+                    <ul class="text-gray-600 space-y-1 list-disc list-inside">
+                        <li>시장 동향 분석</li>
+                        <li>기술적 분석 도구</li>
+                        <li>리스크 평가</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">💡 추천</h3>
+                    <ul class="text-gray-600 space-y-1 list-disc list-inside">
+                        <li>AI 기반 투자 추천</li>
+                        <li>개인화된 투자 전략</li>
+                        <li>시장 기회 알림</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 배포 정보 -->
+        <div class="mt-8 bg-blue-50 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-2">📌 Vercel 배포 정보</h3>
+            <p class="text-gray-700">프로젝트 URL: <a href="https://vercel.com/jhparks-projects-a744b512" class="text-blue-600 hover:underline" target="_blank">https://vercel.com/jhparks-projects-a744b512</a></p>
+            <p class="text-gray-700 mt-2">이 미리보기는 배포 전 최종 확인을 위한 로컬 버전입니다.</p>
+        </div>
+    </div>
+    
+    <script>
+        function showDevice(device) {
+            // 모든 디바이스 프레임 숨기기
+            document.getElementById('mobile').style.display = 'none';
+            document.getElementById('tablet').style.display = 'none';
+            document.getElementById('desktop').style.display = 'none';
+            
+            // 선택된 디바이스 프레임 표시
+            document.getElementById(device).style.display = 'block';
+        }
+        
+        // 초기 로드 시 데스크톱 보기
+        showDevice('desktop');
+    </script>
+</body>
+</html>

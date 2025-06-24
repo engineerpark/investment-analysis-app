@@ -114,6 +114,8 @@ export interface UniversalAsset {
   currency: string;
   exchange?: string;
   geckoId?: string;
+  thumb?: string;
+  marketCapRank?: number;
 }
 
 // 검색 결과 인터페이스
@@ -164,63 +166,209 @@ const KOREAN_STOCKS = [
   { symbol: '348210', name: '넥스틴', englishName: 'Nextin', sector: 'Technology', market: 'KOSDAQ' },
 ];
 
-// 해외 주요 주식 목록
+// 해외 주요 주식 목록 (대폭 확장)
 const US_STOCKS = [
+  // 기술 기업
   { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', market: 'NASDAQ' },
   { symbol: 'MSFT', name: 'Microsoft Corporation', sector: 'Technology', market: 'NASDAQ' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', market: 'NASDAQ' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc. Class A', sector: 'Technology', market: 'NASDAQ' },
+  { symbol: 'GOOG', name: 'Alphabet Inc. Class C', sector: 'Technology', market: 'NASDAQ' },
   { symbol: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary', market: 'NASDAQ' },
   { symbol: 'NVDA', name: 'NVIDIA Corporation', sector: 'Technology', market: 'NASDAQ' },
   { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'Automotive', market: 'NASDAQ' },
   { symbol: 'META', name: 'Meta Platforms Inc.', sector: 'Technology', market: 'NASDAQ' },
-  { symbol: 'BRK.B', name: 'Berkshire Hathaway Inc.', sector: 'Financial', market: 'NYSE' },
-  { symbol: 'LLY', name: 'Eli Lilly and Company', sector: 'Healthcare', market: 'NYSE' },
-  { symbol: 'V', name: 'Visa Inc.', sector: 'Financial', market: 'NYSE' },
-  { symbol: 'UNH', name: 'UnitedHealth Group Inc.', sector: 'Healthcare', market: 'NYSE' },
-  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financial', market: 'NYSE' },
-  { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', market: 'NYSE' },
-  { symbol: 'WMT', name: 'Walmart Inc.', sector: 'Consumer Staples', market: 'NYSE' },
-  { symbol: 'PG', name: 'Procter & Gamble Co.', sector: 'Consumer Staples', market: 'NYSE' },
-  { symbol: 'MA', name: 'Mastercard Inc.', sector: 'Financial', market: 'NYSE' },
-  { symbol: 'HD', name: 'Home Depot Inc.', sector: 'Consumer Discretionary', market: 'NYSE' },
-  { symbol: 'BAC', name: 'Bank of America Corp.', sector: 'Financial', market: 'NYSE' },
-  { symbol: 'ABBV', name: 'AbbVie Inc.', sector: 'Healthcare', market: 'NYSE' },
-  { symbol: 'COST', name: 'Costco Wholesale Corp.', sector: 'Consumer Staples', market: 'NASDAQ' },
   { symbol: 'NFLX', name: 'Netflix Inc.', sector: 'Communication', market: 'NASDAQ' },
   { symbol: 'CRM', name: 'Salesforce Inc.', sector: 'Technology', market: 'NYSE' },
   { symbol: 'ORCL', name: 'Oracle Corporation', sector: 'Technology', market: 'NYSE' },
-  { symbol: 'ACN', name: 'Accenture plc', sector: 'Technology', market: 'NYSE' },
   { symbol: 'AMD', name: 'Advanced Micro Devices Inc.', sector: 'Technology', market: 'NASDAQ' },
-  // ETF 추가
-  { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', sector: 'ETF', market: 'NYSE' },
-  { symbol: 'QQQ', name: 'Invesco QQQ Trust', sector: 'ETF', market: 'NASDAQ' },
-  { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', sector: 'ETF', market: 'NYSE' },
-  { symbol: 'VEA', name: 'Vanguard FTSE Developed Markets ETF', sector: 'ETF', market: 'NYSE' },
-  { symbol: 'VWO', name: 'Vanguard Emerging Markets Stock ETF', sector: 'ETF', market: 'NYSE' },
+  { symbol: 'INTC', name: 'Intel Corporation', sector: 'Technology', market: 'NASDAQ' },
+  { symbol: 'ADBE', name: 'Adobe Inc.', sector: 'Technology', market: 'NASDAQ' },
+  { symbol: 'NOW', name: 'ServiceNow Inc.', sector: 'Technology', market: 'NYSE' },
+  { symbol: 'PANW', name: 'Palo Alto Networks Inc.', sector: 'Technology', market: 'NASDAQ' },
+  { symbol: 'PLTR', name: 'Palantir Technologies Inc.', sector: 'Technology', market: 'NYSE' },
+  { symbol: 'SNOW', name: 'Snowflake Inc.', sector: 'Technology', market: 'NYSE' },
+  { symbol: 'UBER', name: 'Uber Technologies Inc.', sector: 'Technology', market: 'NYSE' },
+  { symbol: 'LYFT', name: 'Lyft Inc.', sector: 'Technology', market: 'NASDAQ' },
+  
+  // 금융
+  { symbol: 'BRK.B', name: 'Berkshire Hathaway Inc. Class B', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'V', name: 'Visa Inc.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'MA', name: 'Mastercard Inc.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'BAC', name: 'Bank of America Corp.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'WFC', name: 'Wells Fargo & Co.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'GS', name: 'Goldman Sachs Group Inc.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'MS', name: 'Morgan Stanley', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'C', name: 'Citigroup Inc.', sector: 'Financial', market: 'NYSE' },
+  { symbol: 'AXP', name: 'American Express Co.', sector: 'Financial', market: 'NYSE' },
+  
+  // 헬스케어
+  { symbol: 'UNH', name: 'UnitedHealth Group Inc.', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'LLY', name: 'Eli Lilly and Company', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'ABBV', name: 'AbbVie Inc.', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'PFE', name: 'Pfizer Inc.', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'TMO', name: 'Thermo Fisher Scientific Inc.', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'DHR', name: 'Danaher Corporation', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'BMY', name: 'Bristol-Myers Squibb Co.', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'CVS', name: 'CVS Health Corporation', sector: 'Healthcare', market: 'NYSE' },
+  { symbol: 'CI', name: 'Cigna Group', sector: 'Healthcare', market: 'NYSE' },
+  
+  // 소비재
+  { symbol: 'WMT', name: 'Walmart Inc.', sector: 'Consumer Staples', market: 'NYSE' },
+  { symbol: 'PG', name: 'Procter & Gamble Co.', sector: 'Consumer Staples', market: 'NYSE' },
+  { symbol: 'HD', name: 'Home Depot Inc.', sector: 'Consumer Discretionary', market: 'NYSE' },
+  { symbol: 'COST', name: 'Costco Wholesale Corp.', sector: 'Consumer Staples', market: 'NASDAQ' },
+  { symbol: 'KO', name: 'Coca-Cola Co.', sector: 'Consumer Staples', market: 'NYSE' },
+  { symbol: 'PEP', name: 'PepsiCo Inc.', sector: 'Consumer Staples', market: 'NASDAQ' },
+  { symbol: 'NKE', name: 'Nike Inc.', sector: 'Consumer Discretionary', market: 'NYSE' },
+  { symbol: 'MCD', name: 'McDonald\'s Corp.', sector: 'Consumer Discretionary', market: 'NYSE' },
+  { symbol: 'SBUX', name: 'Starbucks Corp.', sector: 'Consumer Discretionary', market: 'NASDAQ' },
+  { symbol: 'DIS', name: 'Walt Disney Co.', sector: 'Communication', market: 'NYSE' },
+  
+  // 에너지
+  { symbol: 'XOM', name: 'Exxon Mobil Corp.', sector: 'Energy', market: 'NYSE' },
+  { symbol: 'CVX', name: 'Chevron Corp.', sector: 'Energy', market: 'NYSE' },
+  { symbol: 'COP', name: 'ConocoPhillips', sector: 'Energy', market: 'NYSE' },
+  { symbol: 'EOG', name: 'EOG Resources Inc.', sector: 'Energy', market: 'NYSE' },
+  { symbol: 'SLB', name: 'Schlumberger NV', sector: 'Energy', market: 'NYSE' },
+  
+  // 통신
+  { symbol: 'VZ', name: 'Verizon Communications Inc.', sector: 'Communication', market: 'NYSE' },
+  { symbol: 'T', name: 'AT&T Inc.', sector: 'Communication', market: 'NYSE' },
+  { symbol: 'TMUS', name: 'T-Mobile US Inc.', sector: 'Communication', market: 'NASDAQ' },
+  { symbol: 'CMCSA', name: 'Comcast Corp. Class A', sector: 'Communication', market: 'NASDAQ' },
 ];
 
-// 주요 암호화폐 목록
+// 미국 ETF 목록 (대폭 확장)
+const US_ETFS = [
+  // 광범위 시장 ETF
+  { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', sector: 'ETF', market: 'NYSE', category: 'Large Cap' },
+  { symbol: 'QQQ', name: 'Invesco QQQ Trust', sector: 'ETF', market: 'NASDAQ', category: 'Technology' },
+  { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', sector: 'ETF', market: 'NYSE', category: 'Total Market' },
+  { symbol: 'IWM', name: 'iShares Russell 2000 ETF', sector: 'ETF', market: 'NYSE', category: 'Small Cap' },
+  { symbol: 'VEA', name: 'Vanguard FTSE Developed Markets ETF', sector: 'ETF', market: 'NYSE', category: 'International' },
+  { symbol: 'VWO', name: 'Vanguard Emerging Markets Stock ETF', sector: 'ETF', market: 'NYSE', category: 'Emerging Markets' },
+  { symbol: 'EFA', name: 'iShares MSCI EAFE ETF', sector: 'ETF', market: 'NYSE', category: 'International' },
+  { symbol: 'EEM', name: 'iShares MSCI Emerging Markets ETF', sector: 'ETF', market: 'NYSE', category: 'Emerging Markets' },
+  
+  // 섹터별 ETF
+  { symbol: 'XLK', name: 'Technology Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Technology' },
+  { symbol: 'XLF', name: 'Financial Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Financial' },
+  { symbol: 'XLV', name: 'Health Care Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Healthcare' },
+  { symbol: 'XLE', name: 'Energy Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Energy' },
+  { symbol: 'XLI', name: 'Industrial Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Industrial' },
+  { symbol: 'XLY', name: 'Consumer Discretionary Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Consumer Discretionary' },
+  { symbol: 'XLP', name: 'Consumer Staples Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Consumer Staples' },
+  { symbol: 'XLU', name: 'Utilities Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Utilities' },
+  { symbol: 'XLB', name: 'Materials Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Materials' },
+  { symbol: 'XLRE', name: 'Real Estate Select Sector SPDR Fund', sector: 'ETF', market: 'NYSE', category: 'Real Estate' },
+  
+  // 채권 ETF
+  { symbol: 'AGG', name: 'iShares Core U.S. Aggregate Bond ETF', sector: 'ETF', market: 'NYSE', category: 'Bonds' },
+  { symbol: 'BND', name: 'Vanguard Total Bond Market ETF', sector: 'ETF', market: 'NASDAQ', category: 'Bonds' },
+  { symbol: 'TLT', name: 'iShares 20+ Year Treasury Bond ETF', sector: 'ETF', market: 'NASDAQ', category: 'Treasury' },
+  { symbol: 'IEF', name: 'iShares 7-10 Year Treasury Bond ETF', sector: 'ETF', market: 'NASDAQ', category: 'Treasury' },
+  { symbol: 'SHY', name: 'iShares 1-3 Year Treasury Bond ETF', sector: 'ETF', market: 'NASDAQ', category: 'Treasury' },
+  { symbol: 'LQD', name: 'iShares iBoxx $ Investment Grade Corporate Bond ETF', sector: 'ETF', market: 'NYSE', category: 'Corporate Bonds' },
+  { symbol: 'HYG', name: 'iShares iBoxx $ High Yield Corporate Bond ETF', sector: 'ETF', market: 'NYSE', category: 'High Yield' },
+  { symbol: 'EMB', name: 'iShares J.P. Morgan USD Emerging Markets Bond ETF', sector: 'ETF', market: 'NASDAQ', category: 'Emerging Market Bonds' },
+  
+  // 테마별 ETF
+  { symbol: 'ARKK', name: 'ARK Innovation ETF', sector: 'ETF', market: 'NYSE', category: 'Innovation' },
+  { symbol: 'ARKQ', name: 'ARK Autonomous Technology & Robotics ETF', sector: 'ETF', market: 'NYSE', category: 'Robotics' },
+  { symbol: 'ARKG', name: 'ARK Genomic Revolution ETF', sector: 'ETF', market: 'NYSE', category: 'Genomics' },
+  { symbol: 'ICLN', name: 'iShares Global Clean Energy ETF', sector: 'ETF', market: 'NASDAQ', category: 'Clean Energy' },
+  { symbol: 'MOON', name: 'Direxion Moonshot Innovators ETF', sector: 'ETF', market: 'NYSE', category: 'Innovation' },
+  { symbol: 'SOXX', name: 'iShares Semiconductor ETF', sector: 'ETF', market: 'NASDAQ', category: 'Semiconductors' },
+  { symbol: 'SMH', name: 'VanEck Semiconductor ETF', sector: 'ETF', market: 'NASDAQ', category: 'Semiconductors' },
+  { symbol: 'IBB', name: 'iShares Biotechnology ETF', sector: 'ETF', market: 'NASDAQ', category: 'Biotechnology' },
+  { symbol: 'GLD', name: 'SPDR Gold Shares', sector: 'ETF', market: 'NYSE', category: 'Gold' },
+  { symbol: 'SLV', name: 'iShares Silver Trust', sector: 'ETF', market: 'NYSE', category: 'Silver' },
+  
+  // 배당 ETF
+  { symbol: 'VYM', name: 'Vanguard High Dividend Yield ETF', sector: 'ETF', market: 'NYSE', category: 'Dividend' },
+  { symbol: 'DVY', name: 'iShares Select Dividend ETF', sector: 'ETF', market: 'NASDAQ', category: 'Dividend' },
+  { symbol: 'SCHD', name: 'Schwab US Dividend Equity ETF', sector: 'ETF', market: 'NYSE', category: 'Dividend' },
+  { symbol: 'VIG', name: 'Vanguard Dividend Appreciation ETF', sector: 'ETF', market: 'NYSE', category: 'Dividend Growth' },
+];
+
+// 주요 암호화폐 목록 (대폭 확장)
 const CRYPTOCURRENCIES = [
+  // 메이저 코인
   { symbol: 'BTC', name: 'Bitcoin', geckoId: 'bitcoin' },
   { symbol: 'ETH', name: 'Ethereum', geckoId: 'ethereum' },
+  { symbol: 'USDT', name: 'Tether', geckoId: 'tether' },
   { symbol: 'BNB', name: 'BNB', geckoId: 'binancecoin' },
   { symbol: 'XRP', name: 'Ripple', geckoId: 'ripple' },
   { symbol: 'SOL', name: 'Solana', geckoId: 'solana' },
+  { symbol: 'USDC', name: 'USD Coin', geckoId: 'usd-coin' },
   { symbol: 'ADA', name: 'Cardano', geckoId: 'cardano' },
   { symbol: 'AVAX', name: 'Avalanche', geckoId: 'avalanche-2' },
   { symbol: 'DOGE', name: 'Dogecoin', geckoId: 'dogecoin' },
+  
+  // 디파이 & 레이어1
   { symbol: 'TRX', name: 'TRON', geckoId: 'tron' },
   { symbol: 'MATIC', name: 'Polygon', geckoId: 'matic-network' },
   { symbol: 'DOT', name: 'Polkadot', geckoId: 'polkadot' },
-  { symbol: 'SHIB', name: 'Shiba Inu', geckoId: 'shiba-inu' },
-  { symbol: 'LTC', name: 'Litecoin', geckoId: 'litecoin' },
-  { symbol: 'UNI', name: 'Uniswap', geckoId: 'uniswap' },
   { symbol: 'LINK', name: 'Chainlink', geckoId: 'chainlink' },
+  { symbol: 'UNI', name: 'Uniswap', geckoId: 'uniswap' },
+  { symbol: 'LTC', name: 'Litecoin', geckoId: 'litecoin' },
   { symbol: 'ATOM', name: 'Cosmos', geckoId: 'cosmos' },
   { symbol: 'XLM', name: 'Stellar', geckoId: 'stellar' },
   { symbol: 'ETC', name: 'Ethereum Classic', geckoId: 'ethereum-classic' },
   { symbol: 'NEAR', name: 'NEAR Protocol', geckoId: 'near' },
+  
+  // 새로운 레이어1 & 알트코인
   { symbol: 'FIL', name: 'Filecoin', geckoId: 'filecoin' },
+  { symbol: 'APT', name: 'Aptos', geckoId: 'aptos' },
+  { symbol: 'ARB', name: 'Arbitrum', geckoId: 'arbitrum' },
+  { symbol: 'OP', name: 'Optimism', geckoId: 'optimism' },
+  { symbol: 'SUI', name: 'Sui', geckoId: 'sui' },
+  { symbol: 'SEI', name: 'Sei', geckoId: 'sei-network' },
+  { symbol: 'INJ', name: 'Injective', geckoId: 'injective-protocol' },
+  { symbol: 'TIA', name: 'Celestia', geckoId: 'celestia' },
+  { symbol: 'STRK', name: 'Starknet', geckoId: 'starknet' },
+  { symbol: 'BLUR', name: 'Blur', geckoId: 'blur' },
+  
+  // 메타버스 & 게임
+  { symbol: 'MANA', name: 'Decentraland', geckoId: 'decentraland' },
+  { symbol: 'SAND', name: 'The Sandbox', geckoId: 'the-sandbox' },
+  { symbol: 'AXS', name: 'Axie Infinity', geckoId: 'axie-infinity' },
+  { symbol: 'ENJ', name: 'Enjin Coin', geckoId: 'enjincoin' },
+  { symbol: 'GALA', name: 'Gala', geckoId: 'gala' },
+  { symbol: 'IMX', name: 'Immutable X', geckoId: 'immutable-x' },
+  
+  // 밈코인
+  { symbol: 'SHIB', name: 'Shiba Inu', geckoId: 'shiba-inu' },
+  { symbol: 'PEPE', name: 'Pepe', geckoId: 'pepe' },
+  { symbol: 'FLOKI', name: 'FLOKI', geckoId: 'floki' },
+  { symbol: 'BONK', name: 'Bonk', geckoId: 'bonk' },
+  { symbol: 'WIF', name: 'dogwifhat', geckoId: 'dogwifcoin' },
+  
+  // 인공지능 & 머신러닝
+  { symbol: 'FET', name: 'Fetch.ai', geckoId: 'fetch-ai' },
+  { symbol: 'AGIX', name: 'SingularityNET', geckoId: 'singularitynet' },
+  { symbol: 'OCEAN', name: 'Ocean Protocol', geckoId: 'ocean-protocol' },
+  { symbol: 'RLC', name: 'iExec RLC', geckoId: 'iexec-rlc' },
+  
+  // 스테이블코인
+  { symbol: 'BUSD', name: 'Binance USD', geckoId: 'binance-usd' },
+  { symbol: 'DAI', name: 'Dai', geckoId: 'dai' },
+  { symbol: 'TUSD', name: 'TrueUSD', geckoId: 'true-usd' },
+  { symbol: 'FDUSD', name: 'First Digital USD', geckoId: 'first-digital-usd' },
+  
+  // 기타 주요 알트코인
+  { symbol: 'XMR', name: 'Monero', geckoId: 'monero' },
+  { symbol: 'BCH', name: 'Bitcoin Cash', geckoId: 'bitcoin-cash' },
+  { symbol: 'VET', name: 'VeChain', geckoId: 'vechain' },
+  { symbol: 'ALGO', name: 'Algorand', geckoId: 'algorand' },
+  { symbol: 'HBAR', name: 'Hedera', geckoId: 'hedera-hashgraph' },
+  { symbol: 'ICP', name: 'Internet Computer', geckoId: 'internet-computer' },
+  { symbol: 'FLOW', name: 'Flow', geckoId: 'flow' },
+  { symbol: 'EGLD', name: 'MultiversX', geckoId: 'elrond-erd-2' },
+  { symbol: 'XTZ', name: 'Tezos', geckoId: 'tezos' },
+  { symbol: 'THETA', name: 'Theta Network', geckoId: 'theta-token' },
 ];
 
 // 암호화폐 가격 조회 (CoinGecko Pro API)
@@ -498,16 +646,120 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
   const sources: string[] = [];
 
   try {
-    // 1. 암호화폐 검색
-    const cryptoMatches = CRYPTOCURRENCIES.filter(crypto => 
-      crypto.symbol.toLowerCase().includes(query.toLowerCase()) ||
-      crypto.name.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    if (cryptoMatches.length > 0) {
-      const cryptoPrices = await fetchCryptoPrices(cryptoMatches.map(c => c.symbol));
-      results.push(...cryptoPrices);
-      sources.push('CoinGecko');
+    // 1. 암호화폐 검색 - CoinGecko 실시간 검색 API 사용
+    try {
+      const headers: HeadersInit = {
+        'Accept': 'application/json',
+        'User-Agent': 'Investment-Analysis-App/1.0'
+      };
+      
+      // Pro API 키가 있으면 사용하되, 무료 API도 대응
+      if (COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo' && COINGECKO_API_KEY.startsWith('CG-')) {
+        headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+      }
+
+      // 첫 번째 시도: CoinGecko 검색 API 호출
+      let searchSuccess = false;
+      let topCoins: any[] = [];
+
+      try {
+        const searchResponse = await fetch(
+          `${API_ENDPOINTS.COINGECKO.search}?query=${encodeURIComponent(query.trim())}`,
+          { 
+            headers,
+            method: 'GET'
+          }
+        );
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          topCoins = (searchData.coins || []).slice(0, 8);
+          searchSuccess = true;
+        } else if (searchResponse.status === 429) {
+          console.warn('CoinGecko API 요청 한도 초과, 폴백 사용');
+        } else {
+          console.warn(`CoinGecko 검색 API 오류: ${searchResponse.status}`);
+        }
+      } catch (apiError) {
+        console.warn('CoinGecko API 연결 실패:', apiError);
+      }
+
+      // 검색 결과가 있으면 가격 정보 조회
+      if (searchSuccess && topCoins.length > 0) {
+        try {
+          const coinIds = topCoins.map((coin: any) => coin.id).join(',');
+          
+          const priceResponse = await fetch(
+            `${API_ENDPOINTS.COINGECKO.price}?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`,
+            { headers }
+          );
+
+          if (priceResponse.ok) {
+            const priceData = await priceResponse.json();
+            
+            topCoins.forEach((coin: any) => {
+              const priceInfo = priceData[coin.id];
+              if (priceInfo && priceInfo.usd) {
+                const changeValue = priceInfo.usd_24h_change || 0;
+                
+                results.push({
+                  id: coin.id,
+                  symbol: coin.symbol.toUpperCase(),
+                  name: coin.name,
+                  price: priceInfo.usd,
+                  change: (priceInfo.usd * changeValue) / 100, // 절대값 변화량
+                  changePercent: changeValue,
+                  volume: priceInfo.usd_24h_vol || 0,
+                  marketCap: priceInfo.usd_market_cap || 0,
+                  type: 'crypto' as const,
+                  market: 'CRYPTO' as const,
+                  sector: 'Cryptocurrency',
+                  currency: 'USD',
+                  geckoId: coin.id,
+                  thumb: coin.thumb,
+                  marketCapRank: coin.market_cap_rank
+                });
+              }
+            });
+            
+            sources.push('CoinGecko Real-time');
+          }
+        } catch (priceError) {
+          console.warn('CoinGecko 가격 조회 실패:', priceError);
+        }
+      }
+
+      // 폴백: 로컬 암호화폐 목록에서 검색 (실시간 검색 실패 시 또는 추가 결과가 필요한 경우)
+      if (results.length < 3) {
+        const normalizedQuery = query.toLowerCase().trim();
+        const cryptoMatches = CRYPTOCURRENCIES.filter(crypto => 
+          crypto.symbol.toLowerCase().includes(normalizedQuery) ||
+          crypto.name.toLowerCase().includes(normalizedQuery) ||
+          crypto.name.toLowerCase() === normalizedQuery ||
+          crypto.symbol.toLowerCase() === normalizedQuery
+        );
+        
+        if (cryptoMatches.length > 0) {
+          try {
+            const cryptoPrices = await fetchCryptoPrices(cryptoMatches.slice(0, 5).map(c => c.symbol));
+            
+            // 중복 제거 (이미 있는 코인은 제외)
+            const newCryptos = cryptoPrices.filter(crypto => 
+              !results.some(existing => existing.symbol === crypto.symbol)
+            );
+            
+            results.push(...newCryptos);
+            if (newCryptos.length > 0) {
+              sources.push('CoinGecko Cache');
+            }
+          } catch (fallbackError) {
+            console.warn('암호화폐 폴백 검색 실패:', fallbackError);
+          }
+        }
+      }
+
+    } catch (cryptoError) {
+      console.error('암호화폐 검색 전체 실패:', cryptoError);
     }
 
     // 2. 해외 주식 검색
@@ -520,6 +772,25 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
       const usPrices = await fetchUSStockPrices(usMatches.slice(0, 10).map(s => s.symbol));
       results.push(...usPrices);
       sources.push('Yahoo Finance');
+    }
+
+    // 3. 미국 ETF 검색
+    const etfMatches = US_ETFS.filter(etf =>
+      etf.symbol.toLowerCase().includes(query.toLowerCase()) ||
+      etf.name.toLowerCase().includes(query.toLowerCase()) ||
+      (etf.category && etf.category.toLowerCase().includes(query.toLowerCase()))
+    );
+
+    if (etfMatches.length > 0) {
+      const etfPrices = await fetchUSStockPrices(etfMatches.slice(0, 10).map(e => e.symbol));
+      // ETF 타입으로 명시적 설정
+      const etfResults = etfPrices.map(asset => ({
+        ...asset,
+        type: 'etf' as const,
+        sector: etfMatches.find(e => e.symbol === asset.symbol)?.category || 'ETF'
+      }));
+      results.push(...etfResults);
+      sources.push('Yahoo Finance ETF');
     }
 
     // 3. 국내 주식 검색 (한글/영문 모두 지원)
@@ -575,18 +846,30 @@ export async function getPopularAssets(): Promise<UniversalAsset[]> {
 
   try {
     const popularSymbols = {
-      crypto: ['BTC', 'ETH', 'BNB', 'XRP', 'ADA'],
+      crypto: ['BTC', 'ETH', 'SOL', 'BNB', 'ADA'],
       us: ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'],
+      etf: ['SPY', 'QQQ', 'VTI', 'GLD', 'TLT'],
       kr: ['005930', '000660', '035420', '051910', '068270']
     };
 
-    const [cryptos, usStocks, krStocks] = await Promise.all([
+    const [cryptos, usStocks, etfs, krStocks] = await Promise.all([
       fetchCryptoPrices(popularSymbols.crypto),
       fetchUSStockPrices(popularSymbols.us),
+      fetchUSStockPrices(popularSymbols.etf),
       fetchKRStockPrices(popularSymbols.kr)
     ]);
 
-    const popular = [...cryptos, ...usStocks, ...krStocks];
+    // ETF 데이터를 ETF 타입으로 설정
+    const etfResults = etfs.map(asset => {
+      const etfInfo = US_ETFS.find(e => e.symbol === asset.symbol);
+      return {
+        ...asset,
+        type: 'etf' as const,
+        sector: etfInfo?.category || 'ETF'
+      };
+    });
+
+    const popular = [...cryptos, ...usStocks, ...etfResults, ...krStocks];
     
     // 인기 자산 캐싱 (10분)
     apiCache.set(cacheKey, popular, 600000);
@@ -623,9 +906,9 @@ export async function getAssetDetail(id: string, type: 'stock' | 'crypto'): Prom
 }
 
 // 여러 자산 일괄 가격 조회
-export async function fetchMultipleAssetPrices(assets: Array<{symbol: string, type: 'stock' | 'crypto'}>): Promise<UniversalAsset[]> {
+export async function fetchMultipleAssetPrices(assets: Array<{symbol: string, type: 'stock' | 'crypto' | 'etf' | 'index'}>): Promise<UniversalAsset[]> {
   const cryptoSymbols = assets.filter(a => a.type === 'crypto').map(a => a.symbol);
-  const stockSymbols = assets.filter(a => a.type === 'stock').map(a => a.symbol);
+  const stockSymbols = assets.filter(a => a.type === 'stock' || a.type === 'etf' || a.type === 'index').map(a => a.symbol);
   
   const krSymbols = stockSymbols.filter(symbol => /^\d{6}$/.test(symbol));
   const usSymbols = stockSymbols.filter(symbol => !/^\d{6}$/.test(symbol));

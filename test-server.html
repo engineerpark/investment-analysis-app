@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>투자 분석 앱 - 서버 테스트</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .status { padding: 20px; background: #f0f8ff; border-radius: 8px; margin: 20px 0; }
+        .button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 10px; }
+        .button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 투자 분석 앱</h1>
+        
+        <div class="status">
+            <h3>✅ 완료된 기능들:</h3>
+            <ul>
+                <li>CoinGecko API 실시간 연동</li>
+                <li>코인 검색 기능 완전 복구</li>
+                <li>실시간 가격 업데이트 (30초마다)</li>
+                <li>포트폴리오 실시간 가치 계산</li>
+                <li>한글 인터페이스</li>
+            </ul>
+        </div>
+
+        <h3>🌐 서버 접속 주소:</h3>
+        <button class="button" onclick="window.location.href='http://localhost:3000'">localhost:3000</button>
+        <button class="button" onclick="window.location.href='http://localhost:4000'">localhost:4000</button>
+        <button class="button" onclick="window.location.href='http://127.0.0.1:4000'">127.0.0.1:4000</button>
+
+        <div class="status">
+            <h3>📱 주요 테스트 기능:</h3>
+            <ol>
+                <li><strong>포트폴리오 추천</strong> → 자산 검색에서 "비트코인" 검색</li>
+                <li><strong>실시간 가격</strong> → 포트폴리오 대시보드에서 새로고침 버튼 클릭</li>
+                <li><strong>코인 검색</strong> → "BTC", "ETH", "이더리움" 등으로 검색</li>
+            </ol>
+        </div>
+
+        <script>
+            // 서버 연결 테스트
+            function testConnection(url) {
+                fetch(url)
+                    .then(response => {
+                        if (response.ok) {
+                            console.log(`✅ ${url} 연결 성공`);
+                            window.location.href = url;
+                        }
+                    })
+                    .catch(error => {
+                        console.log(`❌ ${url} 연결 실패:`, error);
+                    });
+            }
+
+            // 페이지 로드 시 자동 테스트
+            setTimeout(() => {
+                testConnection('http://localhost:4000');
+                testConnection('http://localhost:3000');
+                testConnection('http://127.0.0.1:4000');
+            }, 1000);
+        </script>
+    </div>
+</body>
+</html>
