@@ -1,6 +1,6 @@
 {
   "name": "investment-analysis-app",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -56,10 +56,11 @@
     "vaul": "^0.9.1"
   },
   "devDependencies": {
-    "@types/node": "24.0.3",
-    "@types/react": "19.1.8",
-    "eslint": "8.0.0",
-    "eslint-config-next": "14.0.0",
-    "typescript": "5.8.3"
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.30",
+    "typescript": "^5.0.0"
   }
 }
