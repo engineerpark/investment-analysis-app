@@ -4,7 +4,7 @@
   "framework": "nextjs",
   "env": {
     "NODE_ENV": "production",
-    "VERCEL_FORCE_DEPLOY": "1750518500",
+    "VERCEL_FORCE_DEPLOY": "1750519000",
     "ATOMIC_DEPLOY": "true",
     "TARGET_COMMIT": "LATEST"
   },
@@ -23,7 +23,7 @@
         },
         {
           "key": "X-Force-Deploy",
-          "value": "1750518500"
+          "value": "1750519000"
         },
         {
           "key": "X-Target-Commit",
