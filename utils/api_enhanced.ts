@@ -742,7 +742,8 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
         
         for (const symbol of stockSymbols) {
           try {
-            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+            // 전날 종가 데이터를 위해 더 긴 기간 조회 (5일)
+            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`);
             
             if (response.ok) {
               const data = await response.json();
@@ -752,20 +753,32 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
                 const meta = result.meta;
                 const stockInfo = usMatches.find(s => s.symbol === symbol);
                 
-                if (meta.regularMarketPrice) {
-                  const previousClose = meta.previousClose || meta.regularMarketPrice;
-                  const change = meta.regularMarketPrice - previousClose;
-                  const changePercent = (change / previousClose) * 100;
-                  
+                // 전날 종가 기준으로 가격 계산
+                const currentPrice = meta.previousClose || meta.regularMarketPrice;
+                let previousClose = currentPrice;
+                let change = 0;
+                let changePercent = 0;
+                
+                // 과거 데이터에서 전전날 종가를 찾아 변동률 계산
+                if (result.indicators?.quote?.[0]?.close) {
+                  const closePrices = result.indicators.quote[0].close.filter(p => p !== null);
+                  if (closePrices.length >= 2) {
+                    previousClose = closePrices[closePrices.length - 2]; // 전전날 종가
+                    change = currentPrice - previousClose;
+                    changePercent = (change / previousClose) * 100;
+                  }
+                }
+                
+                if (currentPrice && currentPrice > 0) {
                   results.push({
                     id: symbol,
                     symbol: symbol,
                     name: stockInfo?.name || meta.symbol || symbol,
-                    price: meta.regularMarketPrice,
-                    change: change,
-                    changePercent: changePercent,
-                    volume: meta.regularMarketVolume,
-                    marketCap: meta.marketCap,
+                    price: Number(currentPrice.toFixed(2)),
+                    change: Number(change.toFixed(2)),
+                    changePercent: Number(changePercent.toFixed(2)),
+                    volume: meta.regularMarketVolume || 0,
+                    marketCap: meta.marketCap || 0,
                     type: 'stock' as const,
                     market: 'US' as const,
                     sector: stockInfo?.sector || 'Technology',
@@ -773,7 +786,7 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
                     exchange: meta.exchangeName || stockInfo?.market
                   });
                   
-                  console.log(`✅ ${symbol}: $${meta.regularMarketPrice} (${changePercent.toFixed(2)}%)`);
+                  console.log(`✅ ${symbol}: $${currentPrice.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%) [전날종가기준]`);
                 }
               }
             } else {
@@ -784,7 +797,7 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
           }
           
           // API 요청 간 짧은 대기 (Rate Limiting 방지)
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
         
         if (results.length > 0) {
@@ -792,20 +805,23 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
         }
       } catch (apiError) {
         console.error('미국 주식 실시간 API 오류:', apiError);
-        // API 실패시 폴백 로직 (기존 목업 데이터)
+        // API 실패시 폴백 로직 (현실적인 전날 종가 목업 데이터)
         usMatches.slice(0, 3).forEach(stock => {
-          const basePrice = stock.symbol === 'AAPL' ? 192.53 : 
-                           stock.symbol === 'MSFT' ? 415.26 :
-                           100 + Math.random() * 400;
-          const changePercent = (Math.random() - 0.5) * 6;
+          const basePrice = stock.symbol === 'AAPL' ? 229.87 : 
+                           stock.symbol === 'MSFT' ? 441.32 :
+                           stock.symbol === 'GOOGL' ? 189.24 :
+                           stock.symbol === 'TSLA' ? 358.64 :
+                           stock.symbol === 'NVDA' ? 894.50 :
+                           150 + Math.random() * 300;
+          const changePercent = (Math.random() - 0.5) * 4; // ±2% 범위
           
           results.push({
             id: stock.symbol,
             symbol: stock.symbol,
             name: stock.name,
-            price: basePrice,
-            change: basePrice * changePercent / 100,
-            changePercent: changePercent,
+            price: Number(basePrice.toFixed(2)),
+            change: Number((basePrice * changePercent / 100).toFixed(2)),
+            changePercent: Number(changePercent.toFixed(2)),
             type: 'stock' as const,
             market: 'US' as const,
             sector: stock.sector,
@@ -835,43 +851,59 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
         
         for (const symbol of etfSymbols) {
           try {
-            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+            // 전날 종가 데이터를 위해 더 긴 기간 조회 (5일)
+            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`);
             
             if (response.ok) {
               const data = await response.json();
               const result = data.chart?.result?.[0];
               
-              if (result && result.meta && result.meta.regularMarketPrice) {
+              if (result && result.meta) {
                 const meta = result.meta;
                 const etfInfo = etfMatches.find(e => e.symbol === symbol);
-                const previousClose = meta.previousClose || meta.regularMarketPrice;
-                const change = meta.regularMarketPrice - previousClose;
-                const changePercent = (change / previousClose) * 100;
                 
-                results.push({
-                  id: symbol,
-                  symbol: symbol,
-                  name: etfInfo?.name || meta.symbol || symbol,
-                  price: meta.regularMarketPrice,
-                  change: change,
-                  changePercent: changePercent,
-                  volume: meta.regularMarketVolume,
-                  marketCap: meta.marketCap,
-                  type: 'etf' as const,
-                  market: 'US' as const,
-                  sector: etfInfo?.category || 'ETF',
-                  currency: meta.currency || 'USD',
-                  exchange: meta.exchangeName || etfInfo?.market
-                });
+                // 전날 종가 기준으로 가격 계산
+                const currentPrice = meta.previousClose || meta.regularMarketPrice;
+                let previousClose = currentPrice;
+                let change = 0;
+                let changePercent = 0;
                 
-                console.log(`✅ ${symbol}: $${meta.regularMarketPrice} (${changePercent.toFixed(2)}%)`);
+                // 과거 데이터에서 전전날 종가를 찾아 변동률 계산
+                if (result.indicators?.quote?.[0]?.close) {
+                  const closePrices = result.indicators.quote[0].close.filter(p => p !== null);
+                  if (closePrices.length >= 2) {
+                    previousClose = closePrices[closePrices.length - 2]; // 전전날 종가
+                    change = currentPrice - previousClose;
+                    changePercent = (change / previousClose) * 100;
+                  }
+                }
+                
+                if (currentPrice && currentPrice > 0) {
+                  results.push({
+                    id: symbol,
+                    symbol: symbol,
+                    name: etfInfo?.name || meta.symbol || symbol,
+                    price: Number(currentPrice.toFixed(2)),
+                    change: Number(change.toFixed(2)),
+                    changePercent: Number(changePercent.toFixed(2)),
+                    volume: meta.regularMarketVolume || 0,
+                    marketCap: meta.marketCap || 0,
+                    type: 'etf' as const,
+                    market: 'US' as const,
+                    sector: etfInfo?.category || 'ETF',
+                    currency: meta.currency || 'USD',
+                    exchange: meta.exchangeName || etfInfo?.market
+                  });
+                  
+                  console.log(`✅ ${symbol}: $${currentPrice.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%) [ETF 전날종가기준]`);
+                }
               }
             }
           } catch (etfError) {
             console.warn(`${symbol} ETF 조회 실패:`, etfError);
           }
           
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
         
         if (results.some(r => r.type === 'etf')) {
@@ -905,38 +937,55 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
           try {
             // KOSPI/KOSDAQ 종목은 Yahoo Finance에서 .KS 또는 .KQ 접미사 사용
             const yahooSymbol = `${stock.symbol}.${stock.market === 'KOSPI' ? 'KS' : 'KQ'}`;
-            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d`);
+            // 전날 종가 데이터를 위해 더 긴 기간 조회 (5일)
+            const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=5d`);
             
             if (response.ok) {
               const data = await response.json();
               const result = data.chart?.result?.[0];
               
-              if (result && result.meta && result.meta.regularMarketPrice) {
+              if (result && result.meta) {
                 const meta = result.meta;
-                const previousClose = meta.previousClose || meta.regularMarketPrice;
-                const change = meta.regularMarketPrice - previousClose;
-                const changePercent = (change / previousClose) * 100;
                 
-                results.push({
-                  id: stock.symbol,
-                  symbol: stock.symbol,
-                  name: stock.name,
-                  price: meta.regularMarketPrice,
-                  change: change,
-                  changePercent: changePercent,
-                  volume: meta.regularMarketVolume,
-                  marketCap: meta.marketCap,
-                  type: 'stock' as const,
-                  market: 'KR' as const,
-                  sector: stock.sector,
-                  currency: 'KRW',
-                  exchange: stock.market
-                });
+                // 전날 종가 기준으로 가격 계산
+                const currentPrice = meta.previousClose || meta.regularMarketPrice;
+                let previousClose = currentPrice;
+                let change = 0;
+                let changePercent = 0;
                 
-                console.log(`✅ ${stock.symbol} (${stock.name}): ₩${meta.regularMarketPrice.toLocaleString()} (${changePercent.toFixed(2)}%)`);
+                // 과거 데이터에서 전전날 종가를 찾아 변동률 계산
+                if (result.indicators?.quote?.[0]?.close) {
+                  const closePrices = result.indicators.quote[0].close.filter(p => p !== null);
+                  if (closePrices.length >= 2) {
+                    previousClose = closePrices[closePrices.length - 2]; // 전전날 종가
+                    change = currentPrice - previousClose;
+                    changePercent = (change / previousClose) * 100;
+                  }
+                }
+                
+                if (currentPrice && currentPrice > 0) {
+                  results.push({
+                    id: stock.symbol,
+                    symbol: stock.symbol,
+                    name: stock.name,
+                    price: Math.round(currentPrice),
+                    change: Math.round(change),
+                    changePercent: Number(changePercent.toFixed(2)),
+                    volume: meta.regularMarketVolume || 0,
+                    marketCap: meta.marketCap || 0,
+                    type: 'stock' as const,
+                    market: 'KR' as const,
+                    sector: stock.sector,
+                    currency: 'KRW',
+                    exchange: stock.market
+                  });
+                  
+                  console.log(`✅ ${stock.symbol} (${stock.name}): ₩${Math.round(currentPrice).toLocaleString()} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%) [전날종가기준]`);
+                } else {
+                  throw new Error('유효한 가격 데이터 없음');
+                }
               } else {
-                // Yahoo Finance에서 데이터를 가져올 수 없는 경우 네이버 금융 스타일 목업 데이터 사용
-                throw new Error('Yahoo Finance 데이터 없음');
+                throw new Error('Yahoo Finance 메타 데이터 없음');
               }
             } else {
               throw new Error(`HTTP ${response.status}`);
@@ -944,15 +993,18 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
           } catch (stockError) {
             console.warn(`${stock.symbol} 실시간 조회 실패, 목업 데이터 사용:`, stockError.message);
             
-            // 실시간 API 실패시 현실적인 목업 데이터 사용
-            const basePrice = stock.symbol === '005930' ? 75000 :
-                             stock.symbol === '000660' ? 145000 :
-                             stock.symbol === '035420' ? 185000 :
-                             stock.symbol === '051910' ? 420000 :
-                             stock.symbol === '068270' ? 190000 :
-                             50000 + Math.random() * 200000;
+            // 실시간 API 실패시 현실적인 전날 종가 목업 데이터 사용 (2024년 12월 기준)
+            const basePrice = stock.symbol === '005930' ? 54900 :  // 삼성전자
+                             stock.symbol === '000660' ? 138000 : // SK하이닉스
+                             stock.symbol === '035420' ? 186500 : // NAVER
+                             stock.symbol === '051910' ? 430000 : // LG화학
+                             stock.symbol === '068270' ? 182500 : // 셀트리온
+                             stock.symbol === '035720' ? 45300 :  // 카카오
+                             stock.symbol === '323410' ? 25450 :  // 카카오뱅크
+                             stock.symbol === '207940' ? 885000 : // 삼성바이오로직스
+                             40000 + Math.random() * 150000;
             
-            const changePercent = (Math.random() - 0.5) * 8; // ±4% 범위
+            const changePercent = (Math.random() - 0.5) * 6; // ±3% 범위
             
             results.push({
               id: stock.symbol,
