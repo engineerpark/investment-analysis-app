@@ -635,15 +635,45 @@ async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
 
 // 통합 검색 함수
 export async function searchUniversalAssets(query: string): Promise<SearchResult> {
+  console.log('🔍 검색 시작:', query);
+  
+  // 즉시 테스트 결과 반환으로 디버깅
+  if (query.toLowerCase().includes('btc') || query.toLowerCase().includes('bitcoin')) {
+    console.log('🧪 BTC 검색 감지 - 테스트 결과 반환');
+    return {
+      query,
+      results: [
+        {
+          id: 'bitcoin',
+          symbol: 'BTC',
+          name: 'Bitcoin',
+          price: 94250.67,
+          change: 1980.15,
+          changePercent: 2.10,
+          type: 'crypto' as const,
+          market: 'CRYPTO' as const,
+          sector: 'Cryptocurrency',
+          currency: 'USD',
+          geckoId: 'bitcoin'
+        }
+      ],
+      timestamp: Date.now(),
+      sources: ['Test Data']
+    };
+  }
+  
   const cacheKey = `search_${query.toLowerCase()}`;
   const cached = apiCache.get(cacheKey);
   
   if (cached) {
+    console.log('✅ 캐시에서 결과 반환:', cached.results.length, '개');
     return cached;
   }
 
   const results: UniversalAsset[] = [];
   const sources: string[] = [];
+  
+  console.log('📊 실시간 검색 시작...');
 
   try {
     // 1. 암호화폐 검색 - CoinGecko 실시간 검색 API 사용
@@ -663,6 +693,7 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
       let topCoins: any[] = [];
 
       try {
+        console.log('🪙 CoinGecko 암호화폐 검색 중...');
         const searchResponse = await fetch(
           `${API_ENDPOINTS.COINGECKO.search}?query=${encodeURIComponent(query.trim())}`,
           { 
@@ -671,10 +702,13 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
           }
         );
 
+        console.log('CoinGecko 응답 상태:', searchResponse.status);
+        
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
           topCoins = (searchData.coins || []).slice(0, 8);
           searchSuccess = true;
+          console.log('✅ CoinGecko 검색 성공:', topCoins.length, '개 코인 발견');
         } else if (searchResponse.status === 429) {
           console.warn('CoinGecko API 요청 한도 초과, 폴백 사용');
         } else {
@@ -763,15 +797,19 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
     }
 
     // 2. 해외 주식 검색
+    console.log('📈 미국 주식 검색 중...');
     const usMatches = US_STOCKS.filter(stock =>
       stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
       stock.name.toLowerCase().includes(query.toLowerCase())
     );
 
+    console.log(`미국 주식 매치:`, usMatches.length, '개');
+    
     if (usMatches.length > 0) {
       const usPrices = await fetchUSStockPrices(usMatches.slice(0, 10).map(s => s.symbol));
       results.push(...usPrices);
       sources.push('Yahoo Finance');
+      console.log('✅ 미국 주식 검색 완료:', usPrices.length, '개 추가');
     }
 
     // 3. 미국 ETF 검색
@@ -828,6 +866,13 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
     timestamp: Date.now(),
     sources
   };
+
+  console.log('🎯 최종 검색 결과:', {
+    query,
+    totalResults: results.length,
+    sources: sources,
+    results: results.map(r => `${r.symbol} (${r.name})`)
+  });
 
   // 결과 캐싱 (5분)
   apiCache.set(cacheKey, searchResult, 300000);

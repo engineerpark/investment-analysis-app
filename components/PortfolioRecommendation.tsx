@@ -134,8 +134,10 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     return `${asset.type}-${asset.market || 'UNKNOWN'}-${asset.symbol}-${asset.id}`;
   };
 
-  // 검색 기능 (품질 개선)
+  // 검색 기능 (품질 개선 및 디버깅 강화)
   const handleSearch = useCallback(async (query: string) => {
+    console.log('🔍 프론트엔드 검색 시작:', query);
+    
     if (query.length < 2) {
       setSearchResults([]);
       setShowSearch(false);
@@ -148,7 +150,9 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     setSearchError(null);
 
     try {
+      console.log('📡 API 호출 시작...');
       const searchResult = await searchUniversalAssets(query);
+      console.log('📊 API 응답 받음:', searchResult);
       
       // UniversalAsset을 Asset으로 변환
       const convertedResults: Asset[] = searchResult.results.map(asset => ({
@@ -157,14 +161,17 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
         uniqueId: generateUniqueId(asset)
       }));
       
+      console.log('✅ 변환된 결과:', convertedResults.length, '개');
       setSearchResults(convertedResults);
       
       if (convertedResults.length === 0) {
-        setSearchError(null); // 빈 결과는 에러가 아님
+        setSearchError('검색 결과가 없습니다. 다른 키워드를 시도해보세요.');
+      } else {
+        setSearchError(null);
       }
     } catch (error) {
-      console.error('검색 오류:', error);
-      setSearchError('검색 중 오류가 발생했습니다. 네트워크 연결을 확인하고 잠시 후 다시 시도해주세요.');
+      console.error('❌ 검색 오류:', error);
+      setSearchError(`검색 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -173,6 +180,8 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
   // 검색어 변경 시 검색 실행 (디바운싱 개선)
   useEffect(() => {
+    console.log('🎯 검색어 변경:', searchTerm);
+    
     if (searchTerm.length < 2) {
       setSearchResults([]);
       setShowSearch(false);
@@ -181,11 +190,12 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     }
     
     const timer = setTimeout(() => {
+      console.log('⏰ 디바운싱 완료, 검색 시작:', searchTerm);
       handleSearch(searchTerm);
     }, 500); // 디바운싱 시간을 늘려서 API 호출 빈도 감소
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, handleSearch]);
 
   // 자산 추가 (중복 확인 개선)
   const handleAddAsset = (asset: Asset) => {
