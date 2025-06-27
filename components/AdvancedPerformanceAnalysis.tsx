@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { ArrowLeft, TrendingUp, TrendingDown, Award, Target, BarChart3, Calendar, AlertTriangle, Info, X } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, ComposedChart, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, ComposedChart, Area, AreaChart, Legend, ReferenceLine } from 'recharts';
 import { 
   generateBenchmarkData, 
   calculatePerformanceMetrics, 
@@ -177,17 +177,28 @@ export default function AdvancedPerformanceAnalysis({
     );
   }, [portfolioData]);
 
-  // 비교 차트 데이터 (금액 기준)
+  // 비교 차트 데이터 (금액 기준) + 리밸런싱 포인트
   const comparisonChartData = useMemo(() => {
-    const portfolioNormalized = portfolioData.map((d, i) => ({
-      date: d.date,
-      portfolio: d.value, // 실제 포트폴리오 금액
-      benchmark: i < selectedBenchmarkData.data.length ? 
-        (selectedBenchmarkData.data[i].value / selectedBenchmarkData.data[0].value) * initialInvestment : null // 벤치마크도 동일 초기 투자금 기준
-    }));
+    const portfolioNormalized = portfolioData.map((d, i) => {
+      const benchmarkValue = i < selectedBenchmarkData.data.length ? 
+        (selectedBenchmarkData.data[i].value / selectedBenchmarkData.data[0].value) * initialInvestment : null;
+      
+      // 리밸런싱 시점 확인 (분기별 = 90일마다)
+      const isRebalancingPoint = i > 0 && i % 90 === 0;
+      
+      return {
+        date: d.date,
+        portfolio: d.value, // 실제 포트폴리오 금액
+        benchmark: benchmarkValue, // 벤치마크도 동일 초기 투자금 기준
+        isRebalancing: isRebalancingPoint
+      };
+    });
     
     return portfolioNormalized.filter((_, i) => i % (selectedPeriod === '5y' ? 10 : selectedPeriod === '3y' ? 5 : 2) === 0);
   }, [portfolioData, selectedBenchmarkData, selectedPeriod, initialInvestment]);
+
+  // 리밸런싱 포인트 데이터
+  const rebalancingPoints = comparisonChartData.filter(d => d.isRebalancing);
 
   const formatMetric = (value: number, suffix: string = '%', decimals: number = 2) => {
     return `${value.toFixed(decimals)}${suffix}`;
@@ -371,12 +382,24 @@ export default function AdvancedPerformanceAnalysis({
                   {/* 벤치마크 대비 성과 비교 차트 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">포트폴리오 vs 벤치마크 자산 가치 비교 (동일 투자금)</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">포트폴리오 vs 벤치마크 자산 가치 비교 (동일 투자금 ${initialInvestment.toLocaleString()})</CardTitle>
+                        <div className="flex items-center gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-0.5 bg-[#2563eb]"></div>
+                            <span>내 포트폴리오</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-0.5 bg-[#ef4444]" style={{borderTop: '1px dashed #ef4444'}}></div>
+                            <span>{selectedBenchmarkData.name}</span>
+                          </div>
+                        </div>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-48">
+                      <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={comparisonChartData}>
+                          <LineChart data={comparisonChartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                             <XAxis 
                               dataKey="date" 
@@ -394,18 +417,43 @@ export default function AdvancedPerformanceAnalysis({
                             />
                             <Tooltip 
                               formatter={(value: number, name: string) => [
-                                `$${value?.toLocaleString()}`,
-                                name === 'portfolio' ? '내 포트폴리오' : selectedBenchmarkData.name
+                                value ? `$${value.toLocaleString()}` : 'N/A',
+                                name === 'portfolio' ? '내 포트폴리오' : `${selectedBenchmarkData.name} (벤치마크)`
                               ]}
                               labelFormatter={(value) => new Date(value).toLocaleDateString('ko-KR')}
+                              contentStyle={{
+                                backgroundColor: 'white',
+                                border: '1px solid #ccc',
+                                borderRadius: '8px',
+                                fontSize: '12px'
+                              }}
                             />
+                            
+                            {/* 리밸런싱 시점 표시 */}
+                            {rebalancingPoints.map((point, index) => (
+                              <ReferenceLine 
+                                key={`rebalance-${index}`}
+                                x={point.date} 
+                                stroke="#fbbf24" 
+                                strokeDasharray="2 2"
+                                strokeWidth={1}
+                                label={{ 
+                                  value: "리밸런싱", 
+                                  position: "top",
+                                  fontSize: 8,
+                                  fill: "#f59e0b"
+                                }}
+                              />
+                            ))}
+                            
                             <Line 
                               type="monotone" 
                               dataKey="portfolio" 
                               stroke="#2563eb" 
                               strokeWidth={3}
                               dot={false}
-                              name="내 포트폴리오"
+                              name="portfolio"
+                              connectNulls={false}
                             />
                             <Line 
                               type="monotone" 
@@ -414,10 +462,14 @@ export default function AdvancedPerformanceAnalysis({
                               strokeWidth={2}
                               strokeDasharray="5 5"
                               dot={false}
-                              name={selectedBenchmarkData.name}
+                              name="benchmark"
+                              connectNulls={false}
                             />
                           </LineChart>
                         </ResponsiveContainer>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 text-center">
+                        노란색 점선: 분기별 리밸런싱 시점 | 파란색 실선: 내 포트폴리오 | 빨간색 점선: {selectedBenchmarkData.name}
                       </div>
                     </CardContent>
                   </Card>
