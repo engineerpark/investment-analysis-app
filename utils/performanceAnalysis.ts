@@ -38,10 +38,20 @@ interface DrawdownPeriod {
   recovery: boolean;
 }
 
-// 벤치마크 데이터 생성 (실제로는 외부 API에서 가져옴)
-export function generateBenchmarkData(period: string = '1y'): BenchmarkData[] {
-  const days = period === '1y' ? 365 : period === '3y' ? 1095 : 252;
+// 벤치마크 데이터 생성 (리밸런싱 반영)
+export function generateBenchmarkData(period: string = '1y', rebalancingAmount: number = 0, rebalancingPeriod: string = 'quarterly'): BenchmarkData[] {
+  const days = period === '1y' ? 365 : period === '3y' ? 1095 : period === '5y' ? 1825 : 252;
   const endDate = new Date();
+  
+  // 리밸런싱 주기별 일수 정의
+  const rebalancingDays: { [key: string]: number } = {
+    'monthly': 30,
+    'quarterly': 90,
+    'semiannual': 180,
+    'annual': 365
+  };
+  
+  const rebalancingInterval = rebalancingDays[rebalancingPeriod] || 90;
   
   const benchmarks = [
     { name: 'S&P 500', ticker: 'SPY', baseReturn: 0.10, volatility: 0.16 },
@@ -54,6 +64,7 @@ export function generateBenchmarkData(period: string = '1y'): BenchmarkData[] {
   return benchmarks.map(benchmark => {
     const data: { date: string; value: number; return: number }[] = [];
     let currentValue = 100;
+    let totalInvested = 100; // 초기 투자금
     
     // 시드 고정으로 일관된 데이터 생성
     const seed = benchmark.ticker.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -72,24 +83,45 @@ export function generateBenchmarkData(period: string = '1y'): BenchmarkData[] {
         continue;
       }
       
-      // 일일 수익률 계산 (정규분포 기반)
-      const dailyReturn = (benchmark.baseReturn / 252) + 
-                         (random() - 0.5) * benchmark.volatility * 2 / Math.sqrt(252);
+      // 리밸런싱 날짜 확인 (벤치마크도 동일하게 추가 투자)
+      const isRebalancingDay = rebalancingAmount > 0 && i % rebalancingInterval === 0 && i !== days && i !== 0;
       
-      const newValue = currentValue * (1 + dailyReturn);
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        value: newValue,
-        return: dailyReturn * 100
-      });
-      
-      currentValue = newValue;
+      // 리밸런싱 시 추가 투자 (벤치마크도 동일 조건으로 추가 투자)
+      if (isRebalancingDay) {
+        const additionalShares = rebalancingAmount / currentValue; // 현재 가격으로 추가 매수
+        const valueBeforeReturn = currentValue;
+        
+        // 일일 수익률 계산 (정규분포 기반)
+        const dailyReturn = (benchmark.baseReturn / 252) + 
+                           (random() - 0.5) * benchmark.volatility * 2 / Math.sqrt(252);
+        
+        // 기존 자산에 수익률 적용 후 추가 투자 반영
+        currentValue = currentValue * (1 + dailyReturn) + rebalancingAmount;
+        totalInvested += rebalancingAmount;
+        
+        data.push({
+          date: date.toISOString().split('T')[0],
+          value: currentValue,
+          return: dailyReturn * 100
+        });
+      } else {
+        // 일반적인 일일 수익률 계산
+        const dailyReturn = (benchmark.baseReturn / 252) + 
+                           (random() - 0.5) * benchmark.volatility * 2 / Math.sqrt(252);
+        
+        currentValue = currentValue * (1 + dailyReturn);
+        
+        data.push({
+          date: date.toISOString().split('T')[0],
+          value: currentValue,
+          return: dailyReturn * 100
+        });
+      }
     }
     
-    // 성과 지표 계산
+    // 성과 지표 계산 (총 투자금 대비)
     const returns = data.slice(1).map(d => d.return / 100);
-    const totalReturn = (currentValue - 100) / 100;
+    const totalReturn = (currentValue - totalInvested) / totalInvested; // 총 투자금 대비 수익률
     const annualizedReturn = Math.pow(1 + totalReturn, 252 / returns.length) - 1;
     const volatility = calculateVolatility(returns) * Math.sqrt(252);
     const maxDrawdown = calculateMaxDrawdown(data.map(d => d.value));
@@ -180,7 +212,7 @@ export function calculatePerformanceMetrics(
 
 // 기간별 성과 계산
 export function calculatePeriodPerformance(
-  portfolioData: { date: string; value: number }[],
+  portfolioData: { date: string; value: number; totalInvested?: number }[],
   benchmarkData: { date: string; value: number }[]
 ): PeriodPerformance[] {
   const periods = [];
@@ -196,7 +228,12 @@ export function calculatePeriodPerformance(
     const benchmarkYearData = benchmarkData.filter(d => d.date >= yearStart && d.date <= yearEnd);
     
     if (portfolioYearData.length > 0 && benchmarkYearData.length > 0) {
-      const portfolioReturn = (portfolioYearData[portfolioYearData.length - 1].value / portfolioYearData[0].value - 1) * 100;
+      // 리밸런싱을 고려한 수익률 계산 (총 투자금 대비)
+      const portfolioStart = portfolioYearData[0];
+      const portfolioEnd = portfolioYearData[portfolioYearData.length - 1];
+      const totalInvested = portfolioEnd.totalInvested || portfolioStart.value;
+      
+      const portfolioReturn = ((portfolioEnd.value - totalInvested) / totalInvested) * 100;
       const benchmarkReturn = (benchmarkYearData[benchmarkYearData.length - 1].value / benchmarkYearData[0].value - 1) * 100;
       
       periods.push({
@@ -227,7 +264,12 @@ export function calculatePeriodPerformance(
     const benchmarkQuarterData = benchmarkData.filter(d => d.date >= startStr && d.date <= endStr);
     
     if (portfolioQuarterData.length > 0 && benchmarkQuarterData.length > 0) {
-      const portfolioReturn = (portfolioQuarterData[portfolioQuarterData.length - 1].value / portfolioQuarterData[0].value - 1) * 100;
+      // 분기별 리밸런싱을 고려한 수익률 계산
+      const portfolioStart = portfolioQuarterData[0];
+      const portfolioEnd = portfolioQuarterData[portfolioQuarterData.length - 1];
+      const quarterTotalInvested = portfolioEnd.totalInvested || portfolioStart.value;
+      
+      const portfolioReturn = ((portfolioEnd.value - quarterTotalInvested) / quarterTotalInvested) * 100;
       const benchmarkReturn = (benchmarkQuarterData[benchmarkQuarterData.length - 1].value / benchmarkQuarterData[0].value - 1) * 100;
       
       periods.push({
