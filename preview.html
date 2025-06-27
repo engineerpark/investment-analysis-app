@@ -47,15 +47,15 @@
         
         <!-- 미리보기 프레임 -->
         <div id="mobile" class="device-frame mobile-frame mx-auto" style="display: none;">
-            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+            <iframe src="http://localhost:3000" width="100%" height="100%" frameborder="0"></iframe>
         </div>
         
         <div id="tablet" class="device-frame tablet-frame mx-auto" style="display: none;">
-            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+            <iframe src="http://localhost:3000" width="100%" height="100%" frameborder="0"></iframe>
         </div>
         
         <div id="desktop" class="device-frame desktop-frame" style="display: block;">
-            <iframe src="/" width="100%" height="100%" frameborder="0"></iframe>
+            <iframe src="http://localhost:3000" width="100%" height="100%" frameborder="0"></iframe>
         </div>
         
         <!-- 기능 설명 -->
@@ -114,10 +114,37 @@
             
             // 선택된 디바이스 프레임 표시
             document.getElementById(device).style.display = 'block';
+            
+            // iframe 새로고침으로 최신 상태 반영
+            const iframe = document.querySelector(`#${device} iframe`);
+            if (iframe) {
+                console.log(`🔄 ${device} iframe 새로고침`);
+                iframe.src = iframe.src;
+            }
+        }
+        
+        // 자동 새로고침 함수
+        function refreshCurrentFrame() {
+            const visibleFrames = ['mobile', 'tablet', 'desktop'];
+            visibleFrames.forEach(frameId => {
+                const frame = document.getElementById(frameId);
+                if (frame && frame.style.display !== 'none') {
+                    const iframe = frame.querySelector('iframe');
+                    if (iframe) {
+                        console.log(`🔄 자동 새로고침: ${frameId}`);
+                        iframe.src = iframe.src;
+                    }
+                }
+            });
         }
         
         // 초기 로드 시 데스크톱 보기
         showDevice('desktop');
+        
+        // 10초마다 자동 새로고침
+        setInterval(refreshCurrentFrame, 10000);
+        
+        console.log('✅ 미리보기 페이지 로드 완료 - iframe이 http://localhost:3000을 로드합니다');
     </script>
 </body>
 </html>
