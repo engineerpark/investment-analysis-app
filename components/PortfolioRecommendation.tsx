@@ -64,6 +64,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // 인기 자산 로드
   useEffect(() => {
@@ -128,16 +129,23 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     loadPopularAssets();
   }, [investorProfile.type]);
 
-  // 검색 기능
+  // 고유 ID 생성 함수
+  const generateUniqueId = (asset: any): string => {
+    return `${asset.type}-${asset.market || 'UNKNOWN'}-${asset.symbol}-${asset.id}`;
+  };
+
+  // 검색 기능 (품질 개선)
   const handleSearch = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
       setShowSearch(false);
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
     setShowSearch(true);
+    setSearchError(null);
 
     try {
       const searchResult = await searchUniversalAssets(query);
@@ -146,34 +154,49 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
       const convertedResults: Asset[] = searchResult.results.map(asset => ({
         ...asset,
         ticker: asset.symbol,
-        uniqueId: `${asset.type}-${asset.symbol}-${asset.id}`
+        uniqueId: generateUniqueId(asset)
       }));
       
       setSearchResults(convertedResults);
+      
+      if (convertedResults.length === 0) {
+        setSearchError(null); // 빈 결과는 에러가 아님
+      }
     } catch (error) {
       console.error('검색 오류:', error);
+      setSearchError('검색 중 오류가 발생했습니다. 네트워크 연결을 확인하고 잠시 후 다시 시도해주세요.');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
   }, []);
 
-  // 검색어 변경 시 검색 실행 (디바운싱)
+  // 검색어 변경 시 검색 실행 (디바운싱 개선)
   useEffect(() => {
+    if (searchTerm.length < 2) {
+      setSearchResults([]);
+      setShowSearch(false);
+      setSearchError(null);
+      return;
+    }
+    
     const timer = setTimeout(() => {
       handleSearch(searchTerm);
-    }, 300);
+    }, 500); // 디바운싱 시간을 늘려서 API 호출 빈도 감소
 
     return () => clearTimeout(timer);
-  }, [searchTerm, handleSearch]);
+  }, [searchTerm]);
 
-  // 자산 추가
+  // 자산 추가 (중복 확인 개선)
   const handleAddAsset = (asset: Asset) => {
     if (selectedAssets.length >= 20) return;
     
-    const isAlreadySelected = selectedAssets.some(a => 
-      a.symbol === asset.symbol && a.type === asset.type && a.market === asset.market
-    );
+    // 중복 확인 (고유 ID 기준)
+    const newAssetId = generateUniqueId(asset);
+    const isAlreadySelected = selectedAssets.some(a => {
+      const existingId = generateUniqueId(a);
+      return existingId === newAssetId;
+    });
     
     if (!isAlreadySelected) {
       setSelectedAssets(prev => [...prev, asset]);
@@ -181,6 +204,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
     
     setSearchTerm('');
     setShowSearch(false);
+    setSearchError(null);
   };
 
   // 자산 제거
@@ -413,7 +437,21 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                   placeholder="주식, ETF, 암호화폐 검색... (예: 삼성전자, Apple, 비트코인)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchResults.length > 0) {
+                      e.preventDefault();
+                      handleAddAsset(searchResults[0]);
+                    }
+                    if (e.key === 'Escape') {
+                      setSearchTerm('');
+                      setShowSearch(false);
+                    }
+                  }}
                   className="pl-10 h-12"
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={showSearch}
+                  aria-label="자산 검색"
                 />
                 {isSearching && (
                   <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
@@ -424,9 +462,21 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
               {showSearch && searchTerm.length >= 2 && (
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg bg-white p-2">
                   {isSearching ? (
-                    <div className="text-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-gray-500" />
-                      <span className="text-sm text-gray-500">검색 중...</span>
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-xs text-gray-500 mt-2">검색 중...</p>
+                    </div>
+                  ) : searchError ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-red-600 mb-2">{searchError}</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleSearch(searchTerm)}
+                        className="text-xs"
+                      >
+                        다시 시도
+                      </Button>
                     </div>
                   ) : searchResults.length > 0 ? (
                     searchResults.map((asset) => (
@@ -442,6 +492,22 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                       <span className="text-sm text-gray-500">
                         "{searchTerm}"에 대한 검색 결과가 없습니다
                       </span>
+                      <p className="text-xs text-gray-400 mt-2">
+                        다른 키워드로 검색하거나 영문/한글을 바꿔보세요
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                        {['AAPL', '삼성전자', 'BTC', 'SPY', 'QQQ'].map(suggestion => (
+                          <Button
+                            key={suggestion}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSearchTerm(suggestion)}
+                            className="text-xs h-7 px-2"
+                          >
+                            {suggestion}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

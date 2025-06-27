@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
-import { ArrowLeft, TrendingUp, TrendingDown, Award, Target, BarChart3, Calendar, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Award, Target, BarChart3, Calendar, AlertTriangle, Info, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, ComposedChart, Area, AreaChart } from 'recharts';
 import { 
   generateBenchmarkData, 
@@ -50,6 +50,7 @@ export default function AdvancedPerformanceAnalysis({
 }: AdvancedPerformanceAnalysisProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'1y' | '3y' | '5y'>('1y');
   const [selectedBenchmark, setSelectedBenchmark] = useState('SPY');
+  const [showTermInfo, setShowTermInfo] = useState<string | null>(null);
 
   // Helper function to get asset identifier (symbol or ticker)
   const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
@@ -176,17 +177,17 @@ export default function AdvancedPerformanceAnalysis({
     );
   }, [portfolioData]);
 
-  // 비교 차트 데이터
+  // 비교 차트 데이터 (금액 기준)
   const comparisonChartData = useMemo(() => {
     const portfolioNormalized = portfolioData.map((d, i) => ({
       date: d.date,
-      portfolio: ((d.value / portfolioData[0].value) - 1) * 100,
+      portfolio: d.value, // 실제 포트폴리오 금액
       benchmark: i < selectedBenchmarkData.data.length ? 
-        ((selectedBenchmarkData.data[i].value / selectedBenchmarkData.data[0].value) - 1) * 100 : null
+        (selectedBenchmarkData.data[i].value / selectedBenchmarkData.data[0].value) * initialInvestment : null // 벤치마크도 동일 초기 투자금 기준
     }));
     
     return portfolioNormalized.filter((_, i) => i % (selectedPeriod === '5y' ? 10 : selectedPeriod === '3y' ? 5 : 2) === 0);
-  }, [portfolioData, selectedBenchmarkData, selectedPeriod]);
+  }, [portfolioData, selectedBenchmarkData, selectedPeriod, initialInvestment]);
 
   const formatMetric = (value: number, suffix: string = '%', decimals: number = 2) => {
     return `${value.toFixed(decimals)}${suffix}`;
@@ -196,6 +197,116 @@ export default function AdvancedPerformanceAnalysis({
     if (value > 0) return isGood ? 'text-green-600' : 'text-red-600';
     if (value < 0) return isGood ? 'text-red-600' : 'text-green-600';
     return 'text-muted-foreground';
+  };
+
+  // 용어 설명 데이터
+  const termExplanations: Record<string, { title: string; description: string; calculation?: string; interpretation: string }> = {
+    'sharpe': {
+      title: '샤프 비율 (Sharpe Ratio)',
+      description: '위험 대비 수익률을 측정하는 지표입니다. 무위험 수익률을 초과하는 수익률을 변동성으로 나눈 값입니다.',
+      calculation: '샤프 비율 = (포트폴리오 수익률 - 무위험 수익률) ÷ 포트폴리오 변동성',
+      interpretation: '1.0 이상이면 우수, 0.5~1.0이면 양호, 0.5 미만이면 개선이 필요합니다.'
+    },
+    'sortino': {
+      title: '소르티노 비율 (Sortino Ratio)',
+      description: '하방 위험만을 고려한 위험 조정 수익률 지표입니다. 손실 변동성만을 위험으로 간주합니다.',
+      calculation: '소르티노 비율 = (포트폴리오 수익률 - 무위험 수익률) ÷ 하방 변동성',
+      interpretation: '샤프 비율보다 높게 나타나며, 2.0 이상이면 우수한 성과입니다.'
+    },
+    'alpha': {
+      title: '알파 (Alpha)',
+      description: '벤치마크 대비 초과 수익률을 나타냅니다. 펀드매니저의 실력을 측정하는 지표입니다.',
+      calculation: '알파 = 포트폴리오 수익률 - (무위험 수익률 + 베타 × (벤치마크 수익률 - 무위험 수익률))',
+      interpretation: '양수이면 벤치마크를 상회, 음수이면 벤치마크를 하회하는 성과입니다.'
+    },
+    'beta': {
+      title: '베타 (Beta)',
+      description: '시장 전체의 움직임에 대한 민감도를 나타냅니다. 시장 위험을 측정하는 지표입니다.',
+      calculation: '베타 = 포트폴리오와 벤치마크의 공분산 ÷ 벤치마크의 분산',
+      interpretation: '1.0이면 시장과 동일, 1.0 초과면 시장보다 변동성이 크고, 1.0 미만이면 변동성이 작습니다.'
+    },
+    'information': {
+      title: '정보 비율 (Information Ratio)',
+      description: '벤치마크 대비 초과 수익률의 일관성을 측정합니다. 액티브 운용의 효율성을 나타냅니다.',
+      calculation: '정보 비율 = 초과 수익률 ÷ 트래킹 에러',
+      interpretation: '0.5 이상이면 우수, 0.25~0.5이면 양호한 액티브 운용 성과입니다.'
+    },
+    'tracking': {
+      title: '트래킹 에러 (Tracking Error)',
+      description: '포트폴리오와 벤치마크 수익률 차이의 변동성입니다. 벤치마크 추종 정도를 나타냅니다.',
+      calculation: '트래킹 에러 = √(Σ(포트폴리오 수익률 - 벤치마크 수익률)² ÷ n)',
+      interpretation: '낮을수록 벤치마크를 잘 추종하며, 5% 미만이면 양호합니다.'
+    },
+    'calmar': {
+      title: '칼마 비율 (Calmar Ratio)',
+      description: '연간 수익률을 최대 낙폭으로 나눈 위험 조정 수익률 지표입니다.',
+      calculation: '칼마 비율 = 연간 수익률 ÷ 최대 낙폭',
+      interpretation: '3.0 이상이면 우수, 1.0~3.0이면 양호한 성과입니다.'
+    },
+    'maxDrawdown': {
+      title: '최대 낙폭 (Maximum Drawdown)',
+      description: '고점 대비 최대 하락률을 나타냅니다. 손실 위험의 크기를 측정합니다.',
+      calculation: '최대 낙폭 = (고점 - 저점) ÷ 고점 × 100',
+      interpretation: '20% 미만이면 양호, 30% 이상이면 높은 위험 수준입니다.'
+    },
+    'maxGain': {
+      title: '최대 상승폭 (Maximum Gain)',
+      description: '저점 대비 최대 상승률을 나타냅니다. 상승 잠재력을 측정합니다.',
+      calculation: '최대 상승폭 = (고점 - 저점) ÷ 저점 × 100',
+      interpretation: '높을수록 상승 잠재력이 크지만, 변동성도 클 가능성이 있습니다.'
+    },
+    'winRate': {
+      title: '승률 (Win Rate)',
+      description: '전체 거래 중 수익을 낸 거래의 비율입니다.',
+      calculation: '승률 = 수익 거래 수 ÷ 전체 거래 수 × 100',
+      interpretation: '60% 이상이면 우수, 50% 이상이면 양호한 성과입니다.'
+    },
+    'profitFactor': {
+      title: '수익 팩터 (Profit Factor)',
+      description: '총 수익과 총 손실의 비율입니다. 수익성을 나타내는 지표입니다.',
+      calculation: '수익 팩터 = 총 수익 ÷ 총 손실',
+      interpretation: '2.0 이상이면 우수, 1.5 이상이면 양호, 1.0 미만이면 손실입니다.'
+    }
+  };
+
+  // 용어 설명 모달 컴포넌트
+  const TermInfoModal = ({ termKey }: { termKey: string }) => {
+    const term = termExplanations[termKey];
+    if (!term) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">{term.title}</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTermInfo(null)}
+              className="p-1 h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <h4 className="font-medium text-sm text-gray-700 mb-2">설명</h4>
+              <p className="text-sm text-gray-600">{term.description}</p>
+            </div>
+            {term.calculation && (
+              <div>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">계산 방법</h4>
+                <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">{term.calculation}</p>
+              </div>
+            )}
+            <div>
+              <h4 className="font-medium text-sm text-gray-700 mb-2">해석</h4>
+              <p className="text-sm text-gray-600">{term.interpretation}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -260,7 +371,7 @@ export default function AdvancedPerformanceAnalysis({
                   {/* 벤치마크 대비 성과 비교 차트 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">벤치마크 대비 누적 수익률</CardTitle>
+                      <CardTitle className="text-base">포트폴리오 vs 벤치마크 자산 가치 비교 (동일 투자금)</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="h-48">
@@ -279,11 +390,11 @@ export default function AdvancedPerformanceAnalysis({
                             />
                             <YAxis 
                               tick={{ fontSize: 10 }}
-                              tickFormatter={(value) => `${value.toFixed(0)}%`}
+                              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
                             />
                             <Tooltip 
                               formatter={(value: number, name: string) => [
-                                `${value?.toFixed(2)}%`,
+                                `$${value?.toLocaleString()}`,
                                 name === 'portfolio' ? '내 포트폴리오' : selectedBenchmarkData.name
                               ]}
                               labelFormatter={(value) => new Date(value).toLocaleDateString('ko-KR')}
@@ -367,7 +478,17 @@ export default function AdvancedPerformanceAnalysis({
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground">샤프 비율</p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm text-muted-foreground">샤프 비율</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('sharpe')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <p className="text-lg">{formatMetric(performanceMetrics.sharpeRatio, '', 3)}</p>
                           <p className="text-xs text-muted-foreground">
                             {performanceMetrics.sharpeRatio > 1 ? '우수' : 
@@ -375,7 +496,17 @@ export default function AdvancedPerformanceAnalysis({
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">소르티노 비율</p>
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm text-muted-foreground">소르티노 비율</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('sortino')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <p className="text-lg">{formatMetric(performanceMetrics.sortinoRatio, '', 3)}</p>
                           <p className="text-xs text-muted-foreground">하방 위험 기준</p>
                         </div>
@@ -393,21 +524,61 @@ export default function AdvancedPerformanceAnalysis({
                     <CardContent className="space-y-3">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">알파 (α)</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">알파 (α)</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('alpha')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span className={getMetricColor(performanceMetrics.alpha)}>
                             {performanceMetrics.alpha > 0 ? '+' : ''}{formatMetric(performanceMetrics.alpha)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">베타 (β)</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">베타 (β)</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('beta')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span>{formatMetric(performanceMetrics.beta, '', 3)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">정보 비율</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">정보 비율</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('information')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span>{formatMetric(performanceMetrics.informationRatio, '', 3)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">트래킹 에러</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">트래킹 에러</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('tracking')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span>{formatMetric(performanceMetrics.trackingError)}</span>
                         </div>
                       </div>
@@ -421,15 +592,45 @@ export default function AdvancedPerformanceAnalysis({
                     <CardContent className="space-y-3">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">최대 낙폭</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">최대 낙폭</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('maxDrawdown')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span className="text-red-600">-{formatMetric(performanceMetrics.maxDrawdown)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">최대 상승폭</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">최대 상승폭</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('maxGain')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span className="text-green-600">+{formatMetric(performanceMetrics.maxGain)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">칼마 비율</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">칼마 비율</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('calmar')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span>{formatMetric(performanceMetrics.calmarRatio, '', 3)}</span>
                         </div>
                       </div>
@@ -443,13 +644,33 @@ export default function AdvancedPerformanceAnalysis({
                     <CardContent className="space-y-3">
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">승률</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">승률</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('winRate')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span className={getMetricColor(performanceMetrics.winRate - 50)}>
                             {formatMetric(performanceMetrics.winRate)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">수익 팩터</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">수익 팩터</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTermInfo('profitFactor')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                           <span className={getMetricColor(performanceMetrics.profitFactor - 1)}>
                             {formatMetric(performanceMetrics.profitFactor, '', 2)}
                           </span>
@@ -609,6 +830,9 @@ export default function AdvancedPerformanceAnalysis({
           </div>
         </div>
       </div>
+      
+      {/* 용어 설명 모달 */}
+      {showTermInfo && <TermInfoModal termKey={showTermInfo} />}
     </div>
   );
 }

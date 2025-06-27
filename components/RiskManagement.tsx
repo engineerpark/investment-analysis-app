@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { ArrowLeft, Shield, TrendingDown, AlertTriangle, Target, Activity, Zap, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Shield, TrendingDown, AlertTriangle, Target, Activity, Zap, TrendingUp, Info, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
 import {
   analyzePortfolioVolatility,
@@ -61,6 +61,7 @@ export default function RiskManagement({
   onBack
 }: RiskManagementProps) {
   const [selectedTab, setSelectedTab] = useState('volatility');
+  const [showRiskTermInfo, setShowRiskTermInfo] = useState<string | null>(null);
   
   // Helper function to get asset identifier (symbol or ticker)
   const getAssetId = (asset: Asset) => asset.symbol || asset.ticker || asset.id || 'unknown';
@@ -294,6 +295,104 @@ export default function RiskManagement({
   const formatCurrency = (value: number) => `$${Math.abs(value).toLocaleString()}`;
   const formatPercent = (value: number) => `${value.toFixed(2)}%`;
 
+  // 리스크 관리 용어 설명 데이터
+  const riskTermExplanations: Record<string, { title: string; description: string; calculation?: string; interpretation: string; examples?: string }> = {
+    'volatility': {
+      title: '변동성 (Volatility)',
+      description: '자산 가격의 변동 정도를 나타내는 지표입니다. 높을수록 가격 변동이 크며 위험도가 높습니다.',
+      calculation: '변동성 = √(Σ(수익률 - 평균수익률)² ÷ n) × √252',
+      interpretation: '20% 미만: 낮음, 20-40%: 보통, 40% 이상: 높음',
+      examples: '미국 국채: 3-8%, 주식: 15-30%, 암호화폐: 60-100%'
+    },
+    'correlation': {
+      title: '상관관계 (Correlation)',
+      description: '두 자산이 같은 방향으로 움직이는 정도를 나타냅니다. -1부터 1까지의 값을 가집니다.',
+      calculation: '상관계수 = Cov(X,Y) ÷ (σ(X) × σ(Y))',
+      interpretation: '1.0: 완전 양의 상관, 0: 무상관, -1.0: 완전 음의 상관',
+      examples: '주식-채권: -0.3, 주식-VIX: 0.4, 금-달러: -0.6'
+    },
+    'var': {
+      title: 'VaR (Value at Risk)',
+      description: '특정 기간 동안 특정 신뢰수준에서 발생할 수 있는 최대 손실 금액입니다.',
+      calculation: 'VaR = 포트폴리오 가치 × Z값 × 변동성 × √시간',
+      interpretation: '95% VaR $10,000 = 95% 확률로 손실이 $10,000을 넘지 않음',
+      examples: '1일 95% VaR, 1주일 99% VaR, 1개월 95% VaR'
+    },
+    'stressTest': {
+      title: '스트레스 테스트 (Stress Test)',
+      description: '극단적인 시장 상황에서 포트폴리오의 성과를 시뮬레이션하는 분석입니다.',
+      calculation: '과거 위기 시나리오의 수익률을 현재 포트폴리오에 적용',
+      interpretation: '손실률이 20% 미만이면 양호, 50% 이상이면 고위험',
+      examples: '2008 금융위기, 2020 팬데믹, 금리 급상승 시나리오'
+    },
+    'diversification': {
+      title: '분산투자 효과 (Diversification Effect)',
+      description: '여러 자산에 분산투자함으로써 위험을 줄이는 효과를 나타냅니다.',
+      calculation: '분산효과 = 1 - (포트폴리오 위험 ÷ 가중평균 위험)',
+      interpretation: '0-20%: 낮음, 20-40%: 보통, 40% 이상: 우수한 분산효과',
+      examples: '주식+채권: 30%, 국내+해외: 25%, 자산+대안투자: 40%'
+    },
+    'concentrationRisk': {
+      title: '집중 위험 (Concentration Risk)',
+      description: '특정 자산이나 섹터에 과도하게 집중된 정도를 나타내는 위험 지표입니다.',
+      calculation: 'HHI = Σ(각 자산의 비중)²',
+      interpretation: 'HHI < 0.15: 분산됨, 0.15-0.25: 보통, > 0.25: 집중됨',
+      examples: '단일 자산 50%: 고위험, 10개 자산 균등분할: 저위험'
+    },
+    'economicIndicators': {
+      title: '경제지표 (Economic Indicators)',
+      description: '경제 상황을 나타내는 주요 지표들로, 투자 리스크에 영향을 미칩니다.',
+      interpretation: '금리 상승: 채권↓ 주식↓, 인플레이션 상승: 실물자산↑',
+      examples: 'Fed 금리, CPI, 실업률, GDP 성장률, VIX, 달러지수'
+    }
+  };
+
+  // 리스크 용어 설명 모달 컴포넌트
+  const RiskTermInfoModal = ({ termKey }: { termKey: string }) => {
+    const term = riskTermExplanations[termKey];
+    if (!term) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-lg w-full max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="text-lg font-semibold">{term.title}</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowRiskTermInfo(null)}
+              className="p-1 h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <h4 className="font-medium text-sm text-gray-700 mb-2">설명</h4>
+              <p className="text-sm text-gray-600">{term.description}</p>
+            </div>
+            {term.calculation && (
+              <div>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">계산 방법</h4>
+                <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded font-mono">{term.calculation}</p>
+              </div>
+            )}
+            <div>
+              <h4 className="font-medium text-sm text-gray-700 mb-2">해석</h4>
+              <p className="text-sm text-gray-600">{term.interpretation}</p>
+            </div>
+            {term.examples && (
+              <div>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">예시</h4>
+                <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">{term.examples}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full bg-background responsive-container">
       <div className="h-full flex flex-col">
@@ -326,10 +425,20 @@ export default function RiskManagement({
                   {/* 포트폴리오 전체 변동성 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Activity className="h-4 w-4" />
-                        포트폴리오 변동성
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Activity className="h-4 w-4" />
+                          포트폴리오 변동성
+                        </CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('volatility')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -337,13 +446,33 @@ export default function RiskManagement({
                           <div className="text-2xl font-bold text-primary">
                             {formatPercent(volatilityAnalysis.portfolioVolatility)}
                           </div>
-                          <div className="text-sm text-muted-foreground">연간 변동성</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="text-sm text-muted-foreground">연간 변동성</div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowRiskTermInfo('volatility')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">
                             {formatPercent(volatilityAnalysis.diversificationBenefit)}
                           </div>
-                          <div className="text-sm text-muted-foreground">분산 효과</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="text-sm text-muted-foreground">분산 효과</div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowRiskTermInfo('diversification')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -352,7 +481,17 @@ export default function RiskManagement({
                   {/* 자산별 변동성 기여도 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">자산별 변동성 기여도</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">자산별 변동성 기여도</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('volatility')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="h-48">
@@ -383,7 +522,17 @@ export default function RiskManagement({
                   {/* 자산별 상세 변동성 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">자산별 리스크 프로필</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">자산별 리스크 프로필</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('volatility')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
@@ -411,7 +560,17 @@ export default function RiskManagement({
                   {/* 분산 효과 분석 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">분산투자 효과</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">분산투자 효과</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('diversification')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-2 gap-4">
@@ -423,7 +582,17 @@ export default function RiskManagement({
                           <div className={`text-lg font-bold ${getRiskColor(diversificationAnalysis.concentrationRisk)}`}>
                             {diversificationAnalysis.concentrationRisk}
                           </div>
-                          <div className="text-sm text-muted-foreground">집중도 위험</div>
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="text-sm text-muted-foreground">집중도 위험</div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowRiskTermInfo('concentrationRisk')}
+                              className="p-0 h-4 w-4"
+                            >
+                              <Info className="h-3 w-3 text-gray-400" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       
@@ -451,7 +620,17 @@ export default function RiskManagement({
                   {/* 현재 거시경제 지표 현황 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">현재 거시경제 지표 (2025.06.15)</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">현재 거시경제 지표 (2025.06.15)</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('economicIndicators')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 gap-3">
@@ -489,7 +668,17 @@ export default function RiskManagement({
                   {/* 거시경제 지표와 자산 간 상관관계 매트릭스 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">거시경제 지표와 자산 간 상관관계</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">거시경제 지표와 자산 간 상관관계</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('correlation')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
@@ -592,10 +781,20 @@ export default function RiskManagement({
                   {varResults.map((varResult, index) => (
                     <Card key={index}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingDown className="h-4 w-4" />
-                          VaR {(varResult.confidence * 100).toFixed(0)}% 신뢰구간
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <TrendingDown className="h-4 w-4" />
+                            VaR {(varResult.confidence * 100).toFixed(0)}% 신뢰구간
+                          </CardTitle>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowRiskTermInfo('var')}
+                            className="p-0 h-4 w-4"
+                          >
+                            <Info className="h-3 w-3 text-gray-400" />
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-3 gap-3">
@@ -660,10 +859,20 @@ export default function RiskManagement({
                   {/* 포트폴리오 회복력 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        포트폴리오 회복력
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          포트폴리오 회복력
+                        </CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('stressTest')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-2 gap-4">
@@ -733,7 +942,17 @@ export default function RiskManagement({
                   {/* 스트레스 테스트 차트 */}
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">시나리오별 손실 분포</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base">시나리오별 손실 분포</CardTitle>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowRiskTermInfo('stressTest')}
+                          className="p-0 h-4 w-4"
+                        >
+                          <Info className="h-3 w-3 text-gray-400" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="h-48">
@@ -775,6 +994,9 @@ export default function RiskManagement({
           </div>
         </div>
       </div>
+      
+      {/* 리스크 용어 설명 모달 */}
+      {showRiskTermInfo && <RiskTermInfoModal termKey={showRiskTermInfo} />}
     </div>
   );
 }
