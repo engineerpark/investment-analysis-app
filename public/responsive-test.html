@@ -139,8 +139,16 @@
         <div class="test-section">
             <h2>📱 다중 디바이스 테스트</h2>
             <div class="devices-grid">
+                <!-- iPhone 16 (기본 선택) -->
+                <div class="device-frame iphone-16" style="display: block;">
+                    <div class="device-header">📱 iPhone 16 (402px)</div>
+                    <div class="device-content">
+                        <iframe src="http://localhost:3000" id="iphone-16"></iframe>
+                    </div>
+                </div>
+                
                 <!-- Mobile Small -->
-                <div class="device-frame mobile-sm">
+                <div class="device-frame mobile-sm" style="display: none;">
                     <div class="device-header">📱 Mobile Small (320px)</div>
                     <div class="device-content">
                         <iframe src="http://localhost:3000" id="mobile-sm"></iframe>
@@ -148,15 +156,15 @@
                 </div>
                 
                 <!-- Mobile Medium -->
-                <div class="device-frame mobile-md">
+                <div class="device-frame mobile-md" style="display: none;">
                     <div class="device-header">📱 Mobile Medium (375px)</div>
                     <div class="device-content">
                         <iframe src="http://localhost:3000" id="mobile-md"></iframe>
                     </div>
                 </div>
                 
-                <!-- Mobile Large (iPhone 14) -->
-                <div class="device-frame mobile-lg">
+                <!-- iPhone 14 -->
+                <div class="device-frame mobile-lg" style="display: none;">
                     <div class="device-header">📱 iPhone 14 (393px)</div>
                     <div class="device-content">
                         <iframe src="http://localhost:3000" id="mobile-lg"></iframe>
@@ -164,7 +172,7 @@
                 </div>
                 
                 <!-- Tablet -->
-                <div class="device-frame tablet">
+                <div class="device-frame tablet" style="display: none;">
                     <div class="device-header">📱 Tablet (768px)</div>
                     <div class="device-content">
                         <iframe src="http://localhost:3000" id="tablet"></iframe>
