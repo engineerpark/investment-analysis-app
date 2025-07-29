@@ -7,6 +7,7 @@ import { testAPIConnections, getPopularAssets, searchUniversalAssets } from '../
 
 interface ApiStatusProps {
   onClose?: () => void;
+  onPerformanceMonitor?: () => void;
 }
 
 interface APIStatus {
@@ -16,7 +17,7 @@ interface APIStatus {
   errorMessage?: string;
 }
 
-export default function ApiStatus({ onClose }: ApiStatusProps) {
+export default function ApiStatus({ onClose, onPerformanceMonitor }: ApiStatusProps) {
   const [apiStatuses, setApiStatuses] = useState<APIStatus[]>([
     { name: 'CoinGecko', status: 'testing' },
     { name: 'Alpha Vantage', status: 'testing' },
@@ -118,11 +119,23 @@ export default function ApiStatus({ onClose }: ApiStatusProps) {
                 <h1 className="text-lg font-semibold">API 연동 상태</h1>
                 <p className="text-sm text-muted-foreground">실시간 데이터 연결 상태를 확인합니다</p>
               </div>
-              {onClose && (
-                <Button variant="ghost" size="sm" onClick={onClose}>
-                  ✕
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {onPerformanceMonitor && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onPerformanceMonitor}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700"
+                  >
+                    🔍 성능 모니터링
+                  </Button>
+                )}
+                {onClose && (
+                  <Button variant="ghost" size="sm" onClick={onClose}>
+                    ✕
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* API 키 상태 */}

@@ -1,10 +1,13 @@
 /**
- * 강화된 API 시스템 - 해외주식, 국내주식, 암호화폐 통합 검색
+ * 강화된 API 시스템 v2.1.1 - 해외주식, 국내주식, 암호화폐 통합 검색
  * - 실시간 가격 정보 제공
  * - 통합 검색 기능
- * - 캐싱 및 에러 처리
+ * - 개선된 캐싱 및 에러 처리
  * - 여러 API 소스 활용
+ * - 성능 최적화 및 안정성 강화
  */
+
+import { fetchWithRetry, APIErrorHandler, globalLoadingManager } from './error-handler';
 
 // 환경 설정 - 실제 API 키 사용
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || 'CG-XDJgFHwfoyMMnxq5UuWfqvaw';
@@ -54,23 +57,46 @@ const API_ENDPOINTS = {
   }
 };
 
-// 캐시 시스템
+// 개선된 캐시 시스템
 interface CacheItem {
   data: any;
   timestamp: number;
   ttl: number;
+  hits: number;
 }
 
 class APICache {
   private cache = new Map<string, CacheItem>();
   private readonly DEFAULT_TTL = 60000; // 1분
+  private readonly MAX_CACHE_SIZE = 100; // 최대 캐시 크기
 
   set(key: string, data: any, ttl = this.DEFAULT_TTL) {
+    // 캐시 크기 제한
+    if (this.cache.size >= this.MAX_CACHE_SIZE) {
+      const oldestKey = this.getOldestKey();
+      if (oldestKey) this.cache.delete(oldestKey);
+    }
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
+      hits: 0
     });
+  }
+
+  private getOldestKey(): string | null {
+    let oldestKey: string | null = null;
+    let oldestTime = Date.now();
+
+    Array.from(this.cache.entries()).forEach(([key, item]) => {
+      if (item.timestamp < oldestTime) {
+        oldestTime = item.timestamp;
+        oldestKey = key;
+      }
+    });
+
+    return oldestKey;
   }
 
   get(key: string): any | null {
@@ -82,7 +108,30 @@ class APICache {
       return null;
     }
     
+    // 캐시 히트 카운트 증가
+    item.hits++;
+    
     return item.data;
+  }
+
+  // 캐시 통계 제공
+  getStats() {
+    const stats = {
+      size: this.cache.size,
+      totalHits: 0,
+      entries: [] as Array<{key: string, hits: number, age: number}>
+    };
+
+    Array.from(this.cache.entries()).forEach(([key, item]) => {
+      stats.totalHits += item.hits;
+      stats.entries.push({
+        key,
+        hits: item.hits,
+        age: Date.now() - item.timestamp
+      });
+    });
+
+    return stats;
   }
 
   clear() {
@@ -124,6 +173,7 @@ export interface SearchResult {
   results: UniversalAsset[];
   timestamp: number;
   sources: string[];
+  errors?: string[];
 }
 
 // 국내 주요 주식 목록 (실시간 API 보완용)
@@ -633,20 +683,25 @@ async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
   return results;
 }
 
-// 통합 검색 함수
+// 개선된 통합 검색 함수
 export async function searchUniversalAssets(query: string): Promise<SearchResult> {
   console.log('🔍 검색 시작:', query);
+  
+  // 로딩 상태 시작
+  globalLoadingManager.setLoading('asset-search', true);
   
   const cacheKey = `search_${query.toLowerCase()}`;
   const cached = apiCache.get(cacheKey);
   
   if (cached) {
     console.log('✅ 캐시에서 결과 반환:', cached.results.length, '개');
+    globalLoadingManager.setLoading('asset-search', false);
     return cached;
   }
 
   const results: UniversalAsset[] = [];
   const sources: string[] = [];
+  const errors: string[] = [];
   
   console.log('📊 실시간 검색 시작...');
 
@@ -658,13 +713,14 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
       const searchUrl = `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.trim())}`;
       console.log('🌐 검색 URL:', searchUrl);
       
-      const searchResponse = await fetch(searchUrl, {
+      const searchResponse = await fetchWithRetry(searchUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          ...(COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo' ? { 'x-cg-pro-api-key': COINGECKO_API_KEY } : {})
         }
-      });
+      }, 2, 'CoinGecko Search');
 
       console.log('📡 CoinGecko 응답 상태:', searchResponse.status);
       
@@ -719,9 +775,12 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
         }
       } else {
         console.warn(`CoinGecko 검색 실패: ${searchResponse.status}`);
+        errors.push(`CoinGecko: ${searchResponse.status}`);
       }
-    } catch (cryptoError) {
+    } catch (cryptoError: any) {
       console.error('CoinGecko 검색 오류:', cryptoError);
+      const apiError = APIErrorHandler.handleAPIError(cryptoError, 'CoinGecko');
+      errors.push(`CoinGecko: ${apiError.message}`);
     }
 
     // 2. 해외 주식 검색 (실시간 API)
@@ -1048,13 +1107,15 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
     query,
     results: uniqueResults.slice(0, 15), // 최대 15개 결과
     timestamp: Date.now(),
-    sources
+    sources,
+    errors: errors.length > 0 ? errors : undefined
   };
 
   console.log('🎯 최종 검색 결과:', {
     query,
     totalResults: uniqueResults.length,
     sources: sources,
+    errors: errors,
     cryptoCount: uniqueResults.filter(r => r.type === 'crypto').length,
     stockCount: uniqueResults.filter(r => r.type === 'stock').length,
     etfCount: uniqueResults.filter(r => r.type === 'etf').length,
@@ -1063,6 +1124,9 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
 
   // 결과 캐싱 (2분으로 단축 - 실시간 데이터이므로)
   apiCache.set(cacheKey, searchResult, 120000);
+  
+  // 로딩 상태 해제
+  globalLoadingManager.setLoading('asset-search', false);
   
   return searchResult;
 }
@@ -1217,11 +1281,23 @@ export async function initializeAPI(): Promise<void> {
   console.log('✅ API 시스템 초기화 완료');
 }
 
-// 캐시 상태 확인
+// 개선된 캐시 상태 확인
 export function getCacheStats() {
+  const cacheStats = apiCache.getStats();
   return {
-    size: apiCache['cache'].size,
-    memory: process.memoryUsage ? process.memoryUsage().heapUsed : 'N/A'
+    size: cacheStats.size,
+    totalHits: cacheStats.totalHits,
+    averageHits: cacheStats.size > 0 ? (cacheStats.totalHits / cacheStats.size).toFixed(2) : '0',
+    topEntries: cacheStats.entries
+      .sort((a, b) => b.hits - a.hits)
+      .slice(0, 5)
+      .map(entry => ({
+        key: entry.key,
+        hits: entry.hits,
+        ageMinutes: (entry.age / 60000).toFixed(1)
+      })),
+    memory: typeof process !== 'undefined' && process.memoryUsage ? 
+      `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)}MB` : 'N/A'
   };
 }
 

@@ -13,6 +13,7 @@ import EducationCenter from "./components/EducationCenter";
 import PersonalizedRecommendations from "./components/PersonalizedRecommendations";
 import ExternalIntegrations from "./components/ExternalIntegrations";
 import ApiStatus from "./components/ApiStatus";
+import PerformanceMonitor from "./components/PerformanceMonitor";
 import { initializeAPI } from "./utils/api_enhanced";
 import type { Asset, InvestorProfile, InvestmentSettings, SavedPortfolio } from "./types/common";
 
@@ -34,6 +35,7 @@ export default function App() {
     | "recommendations"
     | "integrations"
     | "apiStatus"
+    | "performance"
   >("home");
   const [investorProfile, setInvestorProfile] =
     useState<InvestorProfile | null>(null);
@@ -269,6 +271,10 @@ export default function App() {
     setCurrentStep("apiStatus");
   };
 
+  const handlePerformanceMonitor = () => {
+    setCurrentStep("performance");
+  };
+
 
   const handleBackToDashboard = () => {
     setCurrentStep("dashboard");
@@ -363,6 +369,11 @@ export default function App() {
           />
         ) : currentStep === "apiStatus" ? (
           <ApiStatus
+            onClose={handleBackToPortfolioList}
+            onPerformanceMonitor={handlePerformanceMonitor}
+          />
+        ) : currentStep === "performance" ? (
+          <PerformanceMonitor
             onClose={handleBackToPortfolioList}
           />
         ) : (
