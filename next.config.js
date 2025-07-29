@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  trailingSlash: true,
+  // Vercel 배포에 최적화된 설정
   images: {
     unoptimized: true
   },
@@ -10,11 +10,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  // Static export 경고 제거를 위한 설정
-  output: 'export',
-  distDir: 'dist',
-  // 환경 변수는 Next.js가 자동으로 처리하므로 제거
-  // 대신 .env.local과 .env.production 파일 사용
+  // Vercel 환경에서는 static export 사용하지 않음
+  // output과 distDir 설정 제거로 기본 Next.js 빌드 사용
+  experimental: {
+    // 최신 Next.js 기능 활성화
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons']
+  }
 }
 
 module.exports = nextConfig

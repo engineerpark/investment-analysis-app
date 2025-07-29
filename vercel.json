@@ -1,33 +1,25 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "installCommand": "npm install",
   "framework": "nextjs",
-  "env": {
-    "NODE_ENV": "production",
-    "VERCEL_FORCE_DEPLOY": "1751041441",
-    "ATOMIC_DEPLOY": "true",
-    "TARGET_COMMIT": "LATEST"
-  },
   "functions": {
-    "pages/**/*.js": {
+    "pages/api/**/*.js": {
       "maxDuration": 30
     }
   },
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         },
         {
-          "key": "X-Force-Deploy",
-          "value": "1751041441"
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
         },
         {
-          "key": "X-Target-Commit",
-          "value": "LATEST"
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
         }
       ]
     }
