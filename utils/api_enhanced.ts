@@ -421,7 +421,7 @@ const CRYPTOCURRENCIES = [
   { symbol: 'THETA', name: 'Theta Network', geckoId: 'theta-token' },
 ];
 
-// 암호화폐 가격 조회 (CoinGecko Pro API)
+// 암호화폐 가격 조회 (프록시 기반 개선된 버전)
 async function fetchCryptoPrices(symbols: string[]): Promise<UniversalAsset[]> {
   try {
     const geckoIds = symbols.map(symbol => {
@@ -431,26 +431,41 @@ async function fetchCryptoPrices(symbols: string[]): Promise<UniversalAsset[]> {
 
     if (geckoIds.length === 0) return [];
 
-    // CoinGecko Pro API 헤더 설정
-    const headers: HeadersInit = {
-      'Accept': 'application/json',
-    };
+    console.log('🪙 암호화폐 가격 조회 시작:', geckoIds);
 
-    // API 키가 있으면 Pro API 사용
-    if (COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo') {
-      headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+    let data;
+    try {
+      // 1순위: 프록시 API 사용
+      data = await fetchThroughProxy('coingecko', {
+        endpoint: 'simple/price',
+        ids: geckoIds.join(','),
+        vs_currencies: 'usd',
+        include_24hr_change: 'true',
+        include_market_cap: 'true',
+        include_24hr_vol: 'true',
+        precision: '2'
+      });
+      console.log('✅ CoinGecko 프록시로 가격 조회 성공');
+    } catch (proxyError) {
+      console.warn('❌ CoinGecko 프록시 실패, 직접 API 시도:', proxyError);
+      // 2순위: 직접 API 호출
+      const headers: HeadersInit = { 'Accept': 'application/json' };
+      if (COINGECKO_API_KEY && COINGECKO_API_KEY.startsWith('CG-')) {
+        headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+      }
+
+      const response = await fetch(
+        `${API_ENDPOINTS.COINGECKO.price}?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true&precision=2`,
+        { headers }
+      );
+
+      if (!response.ok) {
+        throw new Error(`CoinGecko API 오류: ${response.status} - ${response.statusText}`);
+      }
+
+      data = await response.json();
+      console.log('✅ CoinGecko 직접 API로 가격 조회 성공');
     }
-
-    const response = await fetch(
-      `${API_ENDPOINTS.COINGECKO.price}?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true&precision=2`,
-      { headers }
-    );
-
-    if (!response.ok) {
-      throw new Error(`CoinGecko API 오류: ${response.status} - ${response.statusText}`);
-    }
-
-    const data = await response.json();
     
     return Object.entries(data).map(([geckoId, priceData]: [string, any]) => {
       const crypto = CRYPTOCURRENCIES.find(c => c.geckoId === geckoId);
@@ -1218,21 +1233,66 @@ export async function fetchMultipleAssetPrices(assets: Array<{symbol: string, ty
   return [...cryptos, ...usStocks, ...krStocks];
 }
 
-// API 연결 상태 테스트
+// 프록시 API를 통한 안전한 데이터 조회
+async function fetchThroughProxy(service: 'coingecko' | 'yahoo', params: Record<string, string>): Promise<any> {
+  try {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    const proxyUrl = service === 'coingecko' 
+      ? `${baseUrl}/api/proxy-coingecko`
+      : `${baseUrl}/api/proxy-yahoo`;
+    
+    const url = new URL(proxyUrl);
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.append(key, value);
+    });
+
+    const response = await fetchWithRetry(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }, 2, `${service} Proxy`);
+
+    if (!response.ok) {
+      throw new Error(`Proxy API returned ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Proxy API returned error');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.warn(`${service} 프록시 API 실패:`, error);
+    throw error;
+  }
+}
+
+// API 연결 상태 테스트 (프록시 기반 개선된 버전)
 export async function testAPIConnections(): Promise<{[key: string]: boolean}> {
   const testResults: {[key: string]: boolean} = {};
   
-  // CoinGecko API 테스트
+  // CoinGecko API 테스트 (프록시 기반)
   try {
-    const headers: HeadersInit = { 'Accept': 'application/json' };
-    if (COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo') {
-      headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+    const data = await fetchThroughProxy('coingecko', { endpoint: 'ping' });
+    testResults['CoinGecko'] = !!(data.gecko_says);
+    console.log('✅ CoinGecko 프록시 테스트 성공');
+  } catch (error: any) {
+    console.warn('❌ CoinGecko 프록시 테스트 실패:', error.message);
+    // 직접 API 호출 백업 시도
+    try {
+      const response = await fetch('https://api.coingecko.com/api/v3/ping', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await response.json();
+      testResults['CoinGecko'] = !!(data.gecko_says);
+      console.log('✅ CoinGecko 직접 API 백업 성공');
+    } catch (backupError) {
+      testResults['CoinGecko'] = false;
+      console.warn('❌ CoinGecko 모든 접근 방법 실패');
     }
-    
-    const response = await fetch('https://api.coingecko.com/api/v3/ping', { headers });
-    testResults['CoinGecko'] = response.ok;
-  } catch (error) {
-    testResults['CoinGecko'] = false;
   }
   
   // Alpha Vantage API 테스트
@@ -1246,12 +1306,29 @@ export async function testAPIConnections(): Promise<{[key: string]: boolean}> {
     testResults['Alpha Vantage'] = false;
   }
   
-  // Yahoo Finance API 테스트
+  // Yahoo Finance API 테스트 (프록시 기반)
   try {
-    const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=1d');
-    testResults['Yahoo Finance'] = response.ok;
-  } catch (error) {
-    testResults['Yahoo Finance'] = false;
+    const data = await fetchThroughProxy('yahoo', { 
+      symbol: 'AAPL',
+      interval: '1d',
+      range: '1d'
+    });
+    testResults['Yahoo Finance'] = !!(data.symbol && data.price);
+    console.log('✅ Yahoo Finance 프록시 테스트 성공');
+  } catch (error: any) {
+    console.warn('❌ Yahoo Finance 프록시 테스트 실패:', error.message);
+    // Alpha Vantage 백업 시도
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.ALPHA_VANTAGE.quote}?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${ALPHA_VANTAGE_API_KEY}`
+      );
+      const data = await response.json();
+      testResults['Yahoo Finance'] = !data['Error Message'] && !data['Note'];
+      console.log('✅ Yahoo Finance Alpha Vantage 백업 성공');
+    } catch (backupError) {
+      testResults['Yahoo Finance'] = false;
+      console.warn('❌ Yahoo Finance 모든 접근 방법 실패');
+    }
   }
   
   return testResults;
