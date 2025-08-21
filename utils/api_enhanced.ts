@@ -805,6 +805,7 @@ async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
 }
 
 // 개선된 통합 검색 함수
+/* 임시 주석 처리 - 빌드 오류 해결용
 export async function searchUniversalAssets(query: string): Promise<SearchResult> {
   console.log('🔍 검색 시작:', query);
   
@@ -948,11 +949,6 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
             console.warn('직접 가격 조회도 실패:', priceDirectError);
           }
         }
-        }
-      } else {
-        console.warn(`CoinGecko 검색 실패: ${searchResponse.status}`);
-        errors.push(`CoinGecko: ${searchResponse.status}`);
-      }
     } catch (cryptoError: any) {
       console.error('CoinGecko 검색 오류:', cryptoError);
       const apiError = APIErrorHandler.handleAPIError(cryptoError, 'CoinGecko');
@@ -1306,6 +1302,7 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
   
   return searchResult;
 }
+*/
 
 // 인기 자산 목록 조회
 export async function getPopularAssets(): Promise<UniversalAsset[]> {
@@ -1572,7 +1569,7 @@ export function convertPrice(price: number, fromCurrency: string, toCurrency: st
 }
 
 export default {
-  searchUniversalAssets,
+  // searchUniversalAssets, // 임시 주석
   getPopularAssets,
   getAssetDetail,
   fetchMultipleAssetPrices,

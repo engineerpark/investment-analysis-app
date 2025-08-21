@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Search, Plus, Minus, ArrowLeft, RefreshCw, AlertCircle, Coins, TrendingUp, Info, PieChart, ArrowRight, DollarSign, Building2, Zap } from 'lucide-react';
 import { InvestorProfile } from '../App';
-import { searchUniversalAssets, getPopularAssets, UniversalAsset } from '../utils/api_enhanced';
+import { /*searchUniversalAssets,*/ getPopularAssets, UniversalAsset } from '../utils/api_enhanced';
 
 // UniversalAsset 타입을 Asset로 재명명하여 호환성 유지
 type Asset = UniversalAsset & {
@@ -151,7 +151,8 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
     try {
       console.log('📡 API 호출 시작...');
-      const searchResult = await searchUniversalAssets(query);
+      // const searchResult = await searchUniversalAssets(query);
+      const searchResult = { results: [] }; // 임시 빈 결과
       console.log('📊 API 응답 받음:', searchResult);
       
       // UniversalAsset을 Asset으로 변환

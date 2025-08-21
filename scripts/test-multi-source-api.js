@@ -5,7 +5,7 @@
  * 모든 데이터 소스의 연결 상태와 응답 속도를 테스트합니다.
  */
 
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const BASE_URL = process.env.TEST_URL || 'http://localhost:3000';
 

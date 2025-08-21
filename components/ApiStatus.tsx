@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { RefreshCw, CheckCircle, XCircle, AlertCircle, Key, Globe } from 'lucide-react';
-import { testAPIConnections, getPopularAssets, searchUniversalAssets } from '../utils/api_enhanced';
+import { testAPIConnections, getPopularAssets /*, searchUniversalAssets*/ } from '../utils/api_enhanced';
 
 interface ApiStatusProps {
   onClose?: () => void;

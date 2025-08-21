@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { searchUniversalAssets } from '../utils/api_enhanced';
+// import { searchUniversalAssets } from '../utils/api_enhanced';
 
 export default function TestSearchPage() {
   const [query, setQuery] = useState('');
@@ -17,7 +17,8 @@ export default function TestSearchPage() {
     console.log('🔍 검색 시작:', query);
     
     try {
-      const result = await searchUniversalAssets(query.trim());
+      // const result = await searchUniversalAssets(query.trim());
+      const result = { results: [] }; // 임시 빈 결과
       console.log('✅ 검색 결과:', result);
       setResults(result);
     } catch (err: any) {

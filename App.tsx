@@ -14,7 +14,7 @@ import PersonalizedRecommendations from "./components/PersonalizedRecommendation
 import ExternalIntegrations from "./components/ExternalIntegrations";
 import ApiStatus from "./components/ApiStatus";
 import PerformanceMonitor from "./components/PerformanceMonitor";
-import { initializeAPI } from "./utils/api_enhanced";
+import { initializeAPI } from "./utils/api_improved";
 import type { Asset, InvestorProfile, InvestmentSettings, SavedPortfolio } from "./types/common";
 
 export type { InvestorProfile } from "./types/common";
