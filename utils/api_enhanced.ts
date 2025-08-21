@@ -550,82 +550,132 @@ async function fetchAlphaVantageStock(symbol: string): Promise<UniversalAsset | 
   }
 }
 
-// 해외 주식 가격 조회 (Alpha Vantage 우선, Yahoo Finance 백업)
+// 해외 주식 가격 조회 (프록시 우선, Alpha Vantage/Yahoo Finance 백업)
 async function fetchUSStockPrices(symbols: string[]): Promise<UniversalAsset[]> {
   const results: UniversalAsset[] = [];
   
   for (const symbol of symbols) {
     try {
-      // 1순위: Alpha Vantage API 시도
-      let asset = await fetchAlphaVantageStock(symbol);
-      
-      if (asset) {
-        results.push(asset);
-        continue;
+      let asset: UniversalAsset | null = null;
+
+      // 1순위: Yahoo Finance 프록시 API 시도 (Rate Limiting 회피)
+      try {
+        console.log(`📈 ${symbol} 프록시를 통한 가격 조회 시도`);
+        const proxyData = await fetchThroughProxy('yahoo', {
+          symbol: symbol,
+          interval: '1d',
+          range: '1d'
+        });
+
+        if (proxyData && proxyData.price && proxyData.price > 0) {
+          const stockInfo = US_STOCKS.find(s => s.symbol === symbol);
+          
+          asset = {
+            id: symbol,
+            symbol: symbol,
+            name: stockInfo?.name || proxyData.symbol || symbol,
+            price: Number(proxyData.price.toFixed(2)),
+            change: Number((proxyData.change || 0).toFixed(2)),
+            changePercent: Number((proxyData.changePercent || 0).toFixed(2)),
+            volume: proxyData.volume || 0,
+            marketCap: proxyData.marketCap || 0,
+            type: stockInfo?.sector === 'ETF' ? 'etf' : 'stock',
+            market: 'US' as const,
+            sector: stockInfo?.sector || 'Technology',
+            currency: proxyData.currency || 'USD',
+            exchange: proxyData.exchange || stockInfo?.market
+          };
+
+          console.log(`✅ ${symbol} 프록시 성공: $${asset.price} (${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent}%)`);
+          results.push(asset);
+          continue;
+        }
+      } catch (proxyError) {
+        console.warn(`❌ ${symbol} 프록시 실패:`, proxyError);
       }
 
-      // 2순위: Yahoo Finance 백업 (기존 코드)
-      const cacheKey = `yahoo_stock_${symbol}`;
-      const cached = apiCache.get(cacheKey);
-      if (cached) {
-        results.push(cached);
-        continue;
+      // 2순위: Alpha Vantage API 백업
+      if (!asset) {
+        asset = await fetchAlphaVantageStock(symbol);
+        if (asset) {
+          console.log(`✅ ${symbol} Alpha Vantage 백업 성공`);
+          results.push(asset);
+          continue;
+        }
       }
 
-      const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${symbol}?interval=1d&range=1d`);
-      
-      if (!response.ok) continue;
+      // 3순위: 직접 Yahoo Finance API (캐시 확인)
+      if (!asset) {
+        const cacheKey = `yahoo_stock_${symbol}`;
+        const cached = apiCache.get(cacheKey);
+        if (cached) {
+          console.log(`✅ ${symbol} 캐시에서 로드`);
+          results.push(cached);
+          continue;
+        }
 
-      const data = await response.json();
-      const result = data.chart?.result?.[0];
-      
-      if (!result) continue;
+        // 4순위: 마지막 시도 - 직접 Yahoo Finance (Rate Limit 위험)
+        try {
+          const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${symbol}?interval=1d&range=1d`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            const result = data.chart?.result?.[0];
+            
+            if (result && result.meta) {
+              const meta = result.meta;
+              const stockInfo = US_STOCKS.find(s => s.symbol === symbol);
+              
+              asset = {
+                id: symbol,
+                symbol: symbol,
+                name: stockInfo?.name || meta.symbol,
+                price: meta.regularMarketPrice || 0,
+                change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
+                changePercent: ((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) / (meta.previousClose || 1) * 100,
+                volume: meta.regularMarketVolume,
+                marketCap: meta.marketCap,
+                type: stockInfo?.sector === 'ETF' ? 'etf' : 'stock',
+                market: 'US' as const,
+                sector: stockInfo?.sector || 'Unknown',
+                currency: meta.currency || 'USD',
+                exchange: meta.exchangeName
+              };
 
-      const meta = result.meta;
-      
-      if (!meta) continue;
-
-      const stockInfo = US_STOCKS.find(s => s.symbol === symbol);
-      
-      asset = {
-        id: symbol,
-        symbol: symbol,
-        name: stockInfo?.name || meta.symbol,
-        price: meta.regularMarketPrice || 0,
-        change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
-        changePercent: ((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) / (meta.previousClose || 1) * 100,
-        volume: meta.regularMarketVolume,
-        marketCap: meta.marketCap,
-        type: stockInfo?.sector === 'ETF' ? 'etf' : 'stock',
-        market: 'US' as const,
-        sector: stockInfo?.sector || 'Unknown',
-        currency: meta.currency || 'USD',
-        exchange: meta.exchangeName
-      };
-
-      apiCache.set(cacheKey, asset, 60000);
-      results.push(asset);
+              apiCache.set(cacheKey, asset, 60000);
+              console.log(`✅ ${symbol} 직접 Yahoo Finance 성공`);
+              results.push(asset);
+            }
+          }
+        } catch (directError) {
+          console.warn(`❌ ${symbol} 직접 API도 실패:`, directError);
+        }
+      }
 
     } catch (error) {
-      console.error(`${symbol} 주식 가격 조회 오류:`, error);
+      console.error(`${symbol} 주식 가격 조회 전체 실패:`, error);
     }
 
-    // API 제한을 고려해 요청 간 대기
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // API 제한을 고려해 요청 간 짧은 대기
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   return results;
 }
 
-// 국내 주식 가격 조회 (Yahoo Finance를 통한 실제 데이터)
+// 국내 주식 가격 조회 (프록시 우선, Yahoo Finance 백업)
 async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> {
   const results: UniversalAsset[] = [];
 
   for (const symbol of symbols) {
     try {
+      let asset: UniversalAsset | null = null;
+
+      // 캐시 먼저 확인
       const cacheKey = `kr_stock_${symbol}`;
       const cached = apiCache.get(cacheKey);
       if (cached) {
+        console.log(`✅ ${symbol} 한국 주식 캐시에서 로드`);
         results.push(cached);
         continue;
       }
@@ -633,66 +683,122 @@ async function fetchKRStockPrices(symbols: string[]): Promise<UniversalAsset[]> 
       const stockInfo = KOREAN_STOCKS.find(s => s.symbol === symbol);
       if (!stockInfo) continue;
 
-      // Yahoo Finance를 통한 한국 주식 조회 (KOSPI/KOSDAQ 종목은 .KS 또는 .KQ 접미사 사용)
-      const yahooSymbol = `${symbol}.${stockInfo.market === 'KOSPI' ? 'KS' : 'KQ'}`;
-      const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${yahooSymbol}?interval=1d&range=1d`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        const result = data.chart?.result?.[0];
+      // 1순위: Yahoo Finance 프록시 시도 (Rate Limiting 회피)
+      try {
+        const yahooSymbol = `${symbol}.${stockInfo.market === 'KOSPI' ? 'KS' : 'KQ'}`;
+        console.log(`🇰🇷 ${symbol} (${stockInfo.name}) 프록시를 통한 가격 조회 시도`);
         
-        if (result) {
-          const meta = result.meta;
-          const quote = result.indicators?.quote?.[0];
-          
-          if (meta && meta.regularMarketPrice) {
-            const asset: UniversalAsset = {
-              id: symbol,
-              symbol: symbol,
-              name: stockInfo.name,
-              price: meta.regularMarketPrice || 0,
-              change: (meta.regularMarketPrice || 0) - (meta.previousClose || 0),
-              changePercent: ((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) / (meta.previousClose || 1) * 100,
-              volume: meta.regularMarketVolume,
-              marketCap: meta.marketCap,
-              type: 'stock',
-              market: 'KR' as const,
-              sector: stockInfo.sector,
-              currency: 'KRW',
-              exchange: stockInfo.market
-            };
+        const proxyData = await fetchThroughProxy('yahoo', {
+          symbol: yahooSymbol,
+          interval: '1d',
+          range: '1d'
+        });
 
-            apiCache.set(cacheKey, asset, 60000); // 1분 캐시
-            results.push(asset);
-            continue;
+        if (proxyData && proxyData.price && proxyData.price > 0) {
+          asset = {
+            id: symbol,
+            symbol: symbol,
+            name: stockInfo.name,
+            price: Math.round(proxyData.price),
+            change: Math.round(proxyData.change || 0),
+            changePercent: Number((proxyData.changePercent || 0).toFixed(2)),
+            volume: proxyData.volume || 0,
+            marketCap: proxyData.marketCap || 0,
+            type: 'stock',
+            market: 'KR' as const,
+            sector: stockInfo.sector,
+            currency: 'KRW',
+            exchange: stockInfo.market
+          };
+
+          apiCache.set(cacheKey, asset, 60000); // 1분 캐시
+          console.log(`✅ ${symbol} (${stockInfo.name}) 프록시 성공: ₩${asset.price.toLocaleString()} (${asset.changePercent >= 0 ? '+' : ''}${asset.changePercent}%)`);
+          results.push(asset);
+          continue;
+        }
+      } catch (proxyError) {
+        console.warn(`❌ ${symbol} 프록시 실패:`, proxyError);
+      }
+
+      // 2순위: 직접 Yahoo Finance API 시도
+      if (!asset) {
+        try {
+          const yahooSymbol = `${symbol}.${stockInfo.market === 'KOSPI' ? 'KS' : 'KQ'}`;
+          const response = await fetch(`${API_ENDPOINTS.YAHOO.quote}${yahooSymbol}?interval=1d&range=1d`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            const result = data.chart?.result?.[0];
+            
+            if (result && result.meta && result.meta.regularMarketPrice) {
+              const meta = result.meta;
+              
+              asset = {
+                id: symbol,
+                symbol: symbol,
+                name: stockInfo.name,
+                price: Math.round(meta.regularMarketPrice),
+                change: Math.round((meta.regularMarketPrice || 0) - (meta.previousClose || 0)),
+                changePercent: Number((((meta.regularMarketPrice || 0) - (meta.previousClose || 0)) / (meta.previousClose || 1) * 100).toFixed(2)),
+                volume: meta.regularMarketVolume || 0,
+                marketCap: meta.marketCap || 0,
+                type: 'stock',
+                market: 'KR' as const,
+                sector: stockInfo.sector,
+                currency: 'KRW',
+                exchange: stockInfo.market
+              };
+
+              apiCache.set(cacheKey, asset, 60000);
+              console.log(`✅ ${symbol} 직접 Yahoo Finance 성공`);
+              results.push(asset);
+              continue;
+            }
           }
+        } catch (directError) {
+          console.warn(`❌ ${symbol} 직접 Yahoo Finance 실패:`, directError);
         }
       }
 
-      // Yahoo Finance 실패시 모의 데이터 사용
-      const basePrice = 50000 + Math.random() * 200000;
-      const changePercent = (Math.random() - 0.5) * 10;
-      
-      const fallbackAsset: UniversalAsset = {
-        id: symbol,
-        symbol: symbol,
-        name: stockInfo.name,
-        price: basePrice,
-        change: basePrice * changePercent / 100,
-        changePercent: changePercent,
-        volume: Math.floor(Math.random() * 1000000),
-        type: 'stock',
-        market: 'KR' as const,
-        sector: stockInfo.sector,
-        currency: 'KRW',
-        exchange: stockInfo.market
-      };
+      // 3순위: 현실적인 목업 데이터 (2024년 12월 기준 실제 가격대)
+      if (!asset) {
+        const basePrice = symbol === '005930' ? 54900 :  // 삼성전자
+                         symbol === '000660' ? 138000 : // SK하이닉스
+                         symbol === '035420' ? 186500 : // NAVER
+                         symbol === '051910' ? 430000 : // LG화학
+                         symbol === '068270' ? 182500 : // 셀트리온
+                         symbol === '035720' ? 45300 :  // 카카오
+                         symbol === '323410' ? 25450 :  // 카카오뱅크
+                         symbol === '207940' ? 885000 : // 삼성바이오로직스
+                         40000 + Math.random() * 150000;
+        
+        const changePercent = (Math.random() - 0.5) * 6; // ±3% 범위
+        
+        asset = {
+          id: symbol,
+          symbol: symbol,
+          name: stockInfo.name,
+          price: Math.round(basePrice),
+          change: Math.round(basePrice * changePercent / 100),
+          changePercent: Number(changePercent.toFixed(2)),
+          volume: Math.floor(100000 + Math.random() * 1000000),
+          type: 'stock',
+          market: 'KR' as const,
+          sector: stockInfo.sector,
+          currency: 'KRW',
+          exchange: stockInfo.market
+        };
 
-      results.push(fallbackAsset);
+        console.log(`⚠️ ${symbol} (${stockInfo.name}) 목업 데이터 사용: ₩${asset.price.toLocaleString()}`);
+        results.push(asset);
+      }
 
     } catch (error) {
-      console.error(`${symbol} 한국 주식 가격 조회 오류:`, error);
+      console.error(`${symbol} 한국 주식 가격 조회 전체 실패:`, error);
     }
+
+    // API 요청 간 대기 (Rate Limiting 방지)
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   return results;
@@ -721,42 +827,96 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
   console.log('📊 실시간 검색 시작...');
 
   try {
-    // 1. 암호화폐 검색 - CoinGecko API (간소화)
-    console.log('🪙 CoinGecko 암호화폐 검색 중...');
+    // 1. 암호화폐 검색 - CoinGecko API (프록시 우선)
+    console.log('🪙 CoinGecko 암호화폐 프록시 검색 중...');
     
     try {
-      const searchUrl = `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.trim())}`;
-      console.log('🌐 검색 URL:', searchUrl);
+      let searchData;
       
-      const searchResponse = await fetchWithRetry(searchUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          ...(COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo' ? { 'x-cg-pro-api-key': COINGECKO_API_KEY } : {})
-        }
-      }, 2, 'CoinGecko Search');
-
-      console.log('📡 CoinGecko 응답 상태:', searchResponse.status);
-      
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        const topCoins = (searchData.coins || []).slice(0, 5);
-        console.log('✅ CoinGecko 검색 성공:', topCoins.length, '개 코인 발견');
+      // 1순위: 프록시를 통한 검색
+      try {
+        console.log('🌐 프록시를 통한 CoinGecko 검색 시도');
+        searchData = await fetchThroughProxy('coingecko', {
+          endpoint: 'search',
+          query: query.trim()
+        });
+        console.log('✅ CoinGecko 프록시 검색 성공');
+      } catch (proxyError) {
+        console.warn('❌ CoinGecko 프록시 검색 실패, 직접 API 시도:', proxyError);
         
-        if (topCoins.length > 0) {
-          // 가격 정보 조회
-          const coinIds = topCoins.map((coin: any) => coin.id).join(',');
-          const priceUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`;
+        // 2순위: 직접 API 호출
+        const searchUrl = `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query.trim())}`;
+        const searchResponse = await fetchWithRetry(searchUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            ...(COINGECKO_API_KEY && COINGECKO_API_KEY !== 'demo' ? { 'x-cg-pro-api-key': COINGECKO_API_KEY } : {})
+          }
+        }, 2, 'CoinGecko Search');
+
+        if (searchResponse.ok) {
+          searchData = await searchResponse.json();
+          console.log('✅ CoinGecko 직접 검색 성공');
+        } else {
+          throw new Error(`CoinGecko 검색 실패: ${searchResponse.status}`);
+        }
+      }
+      
+      const topCoins = (searchData.coins || []).slice(0, 5);
+      console.log('📊 CoinGecko 검색 결과:', topCoins.length, '개 코인 발견');
+      
+      if (topCoins.length > 0) {
+        // 가격 정보 조회 (프록시 우선)
+        const coinIds = topCoins.map((coin: any) => coin.id).join(',');
+        
+        try {
+          // 프록시를 통한 가격 조회
+          const priceData = await fetchThroughProxy('coingecko', {
+            endpoint: 'simple/price',
+            ids: coinIds,
+            vs_currencies: 'usd',
+            include_24hr_change: 'true'
+          });
           
-          console.log('💰 가격 조회 URL:', priceUrl);
+          console.log('💰 프록시 가격 데이터 받음:', Object.keys(priceData).length, '개');
           
+          topCoins.forEach((coin: any) => {
+            const priceInfo = priceData[coin.id];
+            if (priceInfo && priceInfo.usd !== undefined) {
+              const changeValue = priceInfo.usd_24h_change || 0;
+              
+              results.push({
+                id: coin.id,
+                symbol: coin.symbol.toUpperCase(),
+                name: coin.name,
+                price: priceInfo.usd,
+                change: (priceInfo.usd * changeValue) / 100,
+                changePercent: changeValue,
+                type: 'crypto' as const,
+                market: 'CRYPTO' as const,
+                sector: 'Cryptocurrency',
+                currency: 'USD',
+                geckoId: coin.id,
+                thumb: coin.thumb,
+                marketCapRank: coin.market_cap_rank
+              });
+            }
+          });
+          
+          sources.push('CoinGecko (Proxied)');
+          console.log('🎯 암호화폐 프록시 결과 추가됨:', results.length, '개');
+        } catch (priceProxyError) {
+          console.warn('프록시 가격 조회 실패, 직접 API 시도:', priceProxyError);
+          
+          // 가격 직접 API 백업 시도
           try {
+            const priceUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`;
             const priceResponse = await fetch(priceUrl);
             
             if (priceResponse.ok) {
               const priceData = await priceResponse.json();
-              console.log('💰 가격 데이터 받음:', Object.keys(priceData).length, '개');
+              console.log('💰 직접 가격 데이터 받음:', Object.keys(priceData).length, '개');
               
               topCoins.forEach((coin: any) => {
                 const priceInfo = priceData[coin.id];
@@ -781,12 +941,13 @@ export async function searchUniversalAssets(query: string): Promise<SearchResult
                 }
               });
               
-              sources.push('CoinGecko');
-              console.log('🎯 암호화폐 결과 추가됨:', results.length, '개');
+              sources.push('CoinGecko (Direct)');
+              console.log('🎯 암호화폐 직접 결과 추가됨:', results.length, '개');
             }
-          } catch (priceError) {
-            console.warn('가격 조회 실패:', priceError);
+          } catch (priceDirectError) {
+            console.warn('직접 가격 조회도 실패:', priceDirectError);
           }
+        }
         }
       } else {
         console.warn(`CoinGecko 검색 실패: ${searchResponse.status}`);
