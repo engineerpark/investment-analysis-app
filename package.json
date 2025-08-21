@@ -9,7 +9,9 @@
     "lint": "next lint",
     "vercel-build": "next build",
     "type-check": "tsc --noEmit",
-    "postinstall": "next telemetry disable"
+    "postinstall": "next telemetry disable",
+    "test:api": "node scripts/test-multi-source-api.js",
+    "sync:bulk-data": "node scripts/sync-bulk-data.js"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
