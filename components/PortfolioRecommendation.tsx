@@ -5,10 +5,10 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Search, Plus, Minus, ArrowLeft, RefreshCw, AlertCircle, Coins, TrendingUp, Info, PieChart, ArrowRight, DollarSign, Building2, Zap } from 'lucide-react';
 import { InvestorProfile } from '../App';
-import { /*searchUniversalAssets,*/ getPopularAssets, UniversalAsset } from '../utils/api_enhanced';
+import { searchAssets, getPopularAssets as getPopularAssetsNew, fetchMultipleAssetPrices, SearchAsset } from '../utils/search-api';
 
-// UniversalAsset 타입을 Asset로 재명명하여 호환성 유지
-type Asset = UniversalAsset & {
+// SearchAsset 타입을 Asset로 재명명하여 호환성 유지
+type Asset = SearchAsset & {
   ticker?: string; // 기존 코드 호환성을 위해 ticker 추가
   uniqueId?: string;
 };
@@ -65,6 +65,52 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
   const [isSearching, setIsSearching] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+
+  // 포트폴리오 자산 실시간 가격 업데이트
+  const updatePortfolioPrices = useCallback(async () => {
+    if (selectedAssets.length === 0) return;
+    
+    setIsUpdatingPrices(true);
+    console.log('💰 포트폴리오 가격 업데이트 시작:', selectedAssets.length, '개 자산');
+    
+    try {
+      const assetsToUpdate = selectedAssets.map(asset => ({
+        symbol: asset.symbol,
+        type: asset.type,
+        id: asset.id
+      }));
+      
+      const updatedPrices = await fetchMultipleAssetPrices(assetsToUpdate);
+      console.log('✅ 가격 업데이트 완료:', updatedPrices.length, '개');
+      
+      // 기존 선택된 자산들의 가격을 업데이트
+      const updatedAssets = selectedAssets.map(asset => {
+        const updatedPrice = updatedPrices.find(p => 
+          p.symbol === asset.symbol && p.type === asset.type
+        );
+        
+        if (updatedPrice) {
+          return {
+            ...asset,
+            price: updatedPrice.price,
+            change: updatedPrice.change,
+            changePercent: updatedPrice.changePercent,
+            volume: updatedPrice.volume
+          };
+        }
+        return asset;
+      });
+      
+      setSelectedAssets(updatedAssets);
+      console.log('🔄 포트폴리오 자산 가격 업데이트 완료');
+      
+    } catch (error) {
+      console.error('❌ 포트폴리오 가격 업데이트 실패:', error);
+    } finally {
+      setIsUpdatingPrices(false);
+    }
+  }, [selectedAssets]);
 
   // 인기 자산 로드
   useEffect(() => {
@@ -87,7 +133,7 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
         let convertedAssets: Asset[] = mockAssets;
         
         try {
-          const popular = await getPopularAssets();
+          const popular = await getPopularAssetsNew();
           
           if (popular.length > 0) {
             // API 성공시 실제 데이터 사용
@@ -151,11 +197,10 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
 
     try {
       console.log('📡 API 호출 시작...');
-      // const searchResult = await searchUniversalAssets(query);
-      const searchResult = { results: [] }; // 임시 빈 결과
+      const searchResult = await searchAssets(query);
       console.log('📊 API 응답 받음:', searchResult);
       
-      // UniversalAsset을 Asset으로 변환
+      // SearchAsset을 Asset으로 변환
       const convertedResults: Asset[] = searchResult.results.map(asset => ({
         ...asset,
         ticker: asset.symbol,
@@ -553,15 +598,30 @@ export default function PortfolioRecommendation({ investorProfile, onBack, onAna
                     <span>코인 {cryptoCount}개</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-sm text-gray-500 font-medium">
-                    {selectedAssets.length}/20
-                  </span>
+                <div className="text-right flex items-center gap-2">
                   {selectedAssets.length > 0 && (
-                    <div className="text-xs text-green-600 font-medium">
-                      ✓ 다음 단계 가능
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={updatePortfolioPrices}
+                      disabled={isUpdatingPrices}
+                      className="text-xs h-7 px-2 gap-1"
+                      title="실시간 가격 업데이트"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isUpdatingPrices ? 'animate-spin' : ''}`} />
+                      {isUpdatingPrices ? '업데이트중' : '가격갱신'}
+                    </Button>
                   )}
+                  <div className="text-right">
+                    <span className="text-sm text-gray-500 font-medium">
+                      {selectedAssets.length}/20
+                    </span>
+                    {selectedAssets.length > 0 && (
+                      <div className="text-xs text-green-600 font-medium">
+                        ✓ 다음 단계 가능
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

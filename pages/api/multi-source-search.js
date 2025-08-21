@@ -1,4 +1,4 @@
-// 다중 소스 통합 검색 API
+// 다중 소스 통합 검색 API - 간소화된 버전
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -16,8 +16,34 @@ export default async function handler(req, res) {
   const sources = [];
   const errors = [];
 
+  // 미국 주요 주식 목록
+  const US_STOCKS = [
+    { symbol: 'AAPL', name: 'Apple Inc.' },
+    { symbol: 'MSFT', name: 'Microsoft Corporation' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+    { symbol: 'TSLA', name: 'Tesla Inc.' },
+    { symbol: 'META', name: 'Meta Platforms Inc.' },
+    { symbol: 'NVDA', name: 'NVIDIA Corporation' },
+    { symbol: 'NFLX', name: 'Netflix Inc.' },
+    { symbol: 'CRM', name: 'Salesforce Inc.' },
+    { symbol: 'ADBE', name: 'Adobe Inc.' }
+  ];
+
+  // 주요 암호화폐 목록
+  const CRYPTO_LIST = [
+    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
+    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+    { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+    { id: 'solana', symbol: 'SOL', name: 'Solana' },
+    { id: 'cardano', symbol: 'ADA', name: 'Cardano' },
+    { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin' }
+  ];
+
+  const normalizedQuery = query.toLowerCase().trim();
+
   try {
-    // 1. FMP 실시간 검색 (1순위 - 빠름)
+    // 1. 미국 주식 검색
     console.log('💰 FMP 실시간 검색 중...');
     try {
       const fmpResponse = await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/proxy-fmp?endpoint=quote-short&symbol=${encodeURIComponent(query.toUpperCase())}`);
